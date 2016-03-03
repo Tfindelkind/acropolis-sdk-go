@@ -13,7 +13,7 @@ import (
 
 )
 
-type NTNX struct {
+type NTNXConnection struct {
 	
 	NutanixHost 	string
 	Username		string
@@ -26,7 +26,7 @@ type VM struct {
 	MemoryMB		string 
 	Name			string 
 	Vcpus			string 
-	VLANId			string
+	VLAN			string
 	UUID			string
 }
 
@@ -286,24 +286,24 @@ type NetworkList struct {
 }
 
 
-func EncodeCredentials (n *NTNX) {
+func EncodeCredentials (n *NTNXConnection) {
    n.SEnc = base64.StdEncoding.EncodeToString([]byte(n.Username+":"+n.Password))  
 }
 
-func NutanixAHVurl(n *NTNX) string {
+func NutanixAHVurl(n *NTNXConnection) string {
 
 	return  "https://"+n.NutanixHost+":9440/api/nutanix/v0.8/"
 	
 }
 
-func NutanixRestURL(n *NTNX) string {
+func NutanixRestURL(n *NTNXConnection) string {
 
 	return  "https://"+n.NutanixHost+":9440/PrismGateway/services/rest/v1/"
 	
 }
 
 
-func CreateHttpClient(n *NTNX)  {
+func CreateHttpClient(n *NTNXConnection)  {
 	
 	// Ignore certificats which can not be validated (Nutanix CE edition)
     tr := &http.Transport{
@@ -314,7 +314,7 @@ func CreateHttpClient(n *NTNX)  {
 }
 
 
-func NutanixAPIGet (n *NTNX,NutanixAPIurl string, NutanixURI string) []byte {
+func NutanixAPIGet (n *NTNXConnection,NutanixAPIurl string, NutanixURI string) []byte {
 	
 	
 	var req *http.Request
@@ -337,7 +337,7 @@ func NutanixAPIGet (n *NTNX,NutanixAPIurl string, NutanixURI string) []byte {
 }
 
 
-func NutanixAPIPost (n *NTNX,NutanixAPIurl string,NutanixURI string, body *bytes.Buffer) []byte {
+func NutanixAPIPost (n *NTNXConnection,NutanixAPIurl string,NutanixURI string, body *bytes.Buffer) []byte {
 	
 	var req *http.Request
 	var err error
@@ -356,20 +356,20 @@ func NutanixAPIPost (n *NTNX,NutanixAPIurl string,NutanixURI string, body *bytes
 	
 }
 
-func GetCluster(n *NTNX) []byte {
+func GetCluster(n *NTNXConnection) []byte {
 	
 	return NutanixAPIGet(n,NutanixRestURL(n),"cluster");
 
 }
 
-func GetContainer(n *NTNX) []byte {
+func GetContainer(n *NTNXConnection) []byte {
 	
 	
 	return NutanixAPIGet(n,NutanixRestURL(n),"containers");
 
 }
 
-func VMExist(n *NTNX, v *VM) bool {
+func VMExist(n *NTNXConnection, v *VM) bool {
 	
 
 	
@@ -392,7 +392,7 @@ func VMExist(n *NTNX, v *VM) bool {
 	
 } 
 
-func GetVMID(n *NTNX, v *VM) {
+func GetVMID(n *NTNXConnection, v *VM) {
 	
 	
 	resp := NutanixAPIGet(n,NutanixAHVurl(n),"vms")
@@ -413,7 +413,7 @@ func GetVMID(n *NTNX, v *VM) {
     		
 }
 
-func CreateVM(n *NTNX, v *VM) {
+func CreateVM(n *NTNXConnection, v *VM) {
 	
 	var jsonStr = []byte(`{"memoryMb": "`+v.MemoryMB+`", "name": "`+v.Name+`", "numVcpus": "`+v.Vcpus+`"}`)	
 	
@@ -423,7 +423,7 @@ func CreateVM(n *NTNX, v *VM) {
 	
 }
 
-func ImageExist(n *NTNX, im *Image) bool {
+func ImageExist(n *NTNXConnection, im *Image) bool {
 	
 	// Image names are not unique so using FilterCriteria could return > 1 value
 	resp := NutanixAPIGet(n,NutanixAHVurl(n),"images")
@@ -447,7 +447,7 @@ func ImageExist(n *NTNX, im *Image) bool {
 	
 }
 
-func GetContainerID(n *NTNX,d *VDisk)  {
+func GetContainerID(n *NTNXConnection,d *VDisk)  {
 	
 	resp := NutanixAPIGet(n,NutanixRestURL(n),"containers?filterCriteria=container_name%3D%3D"+d.ContainerName)
 	
@@ -468,7 +468,7 @@ func GetContainerID(n *NTNX,d *VDisk)  {
 	d.ContainerID = s[0].ID
 }
 
-func CreateVDisk(n *NTNX,d *VDisk) {	
+func CreateVDisk(n *NTNXConnection,d *VDisk) {	
 	
 	var jsonStr = []byte(`{"containerId": "`+d.ContainerID+`", "name": "`+d.Name+`", "maxCapacityBytes": "`+d.MaxCapacityBytes+`"}`)
 		
@@ -477,7 +477,7 @@ func CreateVDisk(n *NTNX,d *VDisk) {
 	fmt.Println(resp);
 } 
 
-func CreateVDiskforVM (n *NTNX,v *VM, d *VDisk) {
+func CreateVDiskforVM (n *NTNXConnection,v *VM, d *VDisk) {
 	
 		
 	var jsonStr = []byte(`{ "disks": [  { "vmDiskCreate":  { "sizeMb": "`+d.MaxCapacityBytes+`", "containerId": "`+d.ContainerID+`" }} ] }`)	
@@ -488,7 +488,7 @@ func CreateVDiskforVM (n *NTNX,v *VM, d *VDisk) {
 
 }
 
-func CloneCDforVM (n *NTNX,v *VM, im *Image) {
+func CloneCDforVM (n *NTNXConnection,v *VM, im *Image) {
 		
 	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "`+im.VMDiskID+`" } , "isCdrom" : "true"} ] }`)
 	
@@ -501,7 +501,7 @@ func CloneCDforVM (n *NTNX,v *VM, im *Image) {
 }
 
 
-func GetVDiskID(n *NTNX,d *VDisk)  {
+func GetVDiskID(n *NTNXConnection,d *VDisk)  {
 	
 	
 	resp := NutanixAPIGet(n,NutanixRestURL(n),`vdisks/?vdiskNames=`+d.Name)
@@ -519,7 +519,7 @@ func GetVDiskID(n *NTNX,d *VDisk)  {
 		
 }
 
-func GetNetworkID(n *NTNX,net *Network) {
+func GetNetworkID(n *NTNXConnection,net *Network) {
 
 	fmt.Println(NutanixRestURL(n)+"networks/?filterCriteria=name%3D%3D"+net.Name)
 
@@ -534,7 +534,7 @@ func GetNetworkID(n *NTNX,net *Network) {
 	fmt.Println(net.UUID)
 }
 
-func CreateVNicforVM (n *NTNX,v *VM, net *Network) {
+func CreateVNicforVM (n *NTNXConnection,v *VM, net *Network) {
 	
 	var jsonStr = []byte(`{ "specList": [ {"networkUuid": "`+net.UUID+`"} ] }`)
 		
