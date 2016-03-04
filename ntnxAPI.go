@@ -392,8 +392,8 @@ func VMExist(n *NTNXConnection, v *VM) bool {
 	
 } 
 
-func GetVMID(n *NTNXConnection, v *VM) {
-	
+func GetVMIDbyName(n *NTNXConnection, Name string) string {
+	//VM Names are not unique. Returns the first found
 	
 	resp := NutanixAPIGet(n,NutanixAHVurl(n),"vms")
 	
@@ -402,14 +402,16 @@ func GetVMID(n *NTNXConnection, v *VM) {
 	json.Unmarshal(resp, &vl)	
 
 	s := vl.Entities
-	
-	
+				
+	// TODO FilterCriteria seems not to work in 4.5 
+	// Return error when > 1 found and not found
 	for i:= 0; i < len(s); i++ {
-		if s[i].Config.Name == v.Name {
-			v.UUID = s[i].UUID
+		if s[i].Config.Name == Name {			
+			return s[i].UUID
 		}
-		fmt.Println(v.UUID)
 	}	
+    		
+    return ""
     		
 }
 
@@ -481,6 +483,8 @@ func CreateVDiskforVM (n *NTNXConnection,v *VM, d *VDisk) {
 	
 		
 	var jsonStr = []byte(`{ "disks": [  { "vmDiskCreate":  { "sizeMb": "`+d.MaxCapacityBytes+`", "containerId": "`+d.ContainerID+`" }} ] }`)	
+	
+	fmt.Println(string(jsonStr)+"vms/"+v.UUID+"/disks/");
 	
 	resp := NutanixAPIPost(n,NutanixAHVurl(n),"vms/"+v.UUID+"/disks/",bytes.NewBuffer(jsonStr))
 	
