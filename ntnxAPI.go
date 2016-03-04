@@ -447,9 +447,9 @@ func ImageExist(n *NTNXConnection, im *Image) bool {
 	
 }
 
-func GetContainerID(n *NTNXConnection,d *VDisk)  {
+func GetContainerIDbyName(n *NTNXConnection,ContainerName string) string {
 	
-	resp := NutanixAPIGet(n,NutanixRestURL(n),"containers?filterCriteria=container_name%3D%3D"+d.ContainerName)
+	resp := NutanixAPIGet(n,NutanixRestURL(n),"containers?filterCriteria=container_name%3D%3D"+ContainerName)
 	
 	var c Container_json
 		
@@ -465,7 +465,7 @@ func GetContainerID(n *NTNXConnection,d *VDisk)  {
 		// return error (container is not unique)
 	}
 	
-	d.ContainerID = s[0].ID
+	return s[0].ID
 }
 
 func CreateVDisk(n *NTNXConnection,d *VDisk) {	
@@ -501,12 +501,12 @@ func CloneCDforVM (n *NTNXConnection,v *VM, im *Image) {
 }
 
 
-func GetVDiskID(n *NTNXConnection,d *VDisk)  {
+func GetVDiskIDbyName(n *NTNXConnection,Name string) string {
 	
 	
-	resp := NutanixAPIGet(n,NutanixRestURL(n),`vdisks/?vdiskNames=`+d.Name)
+	resp := NutanixAPIGet(n,NutanixRestURL(n),`vdisks/?vdiskNames=`+Name)
 	
-	//remove "[" at begin and end "]" for Unmarshal	
+	//remove "[" at begin and end "]" before Unmarshal	
 	r := resp[1:len(resp)-1] 
 	
 	fmt.Println(string(r)) 
@@ -515,23 +515,22 @@ func GetVDiskID(n *NTNXConnection,d *VDisk)  {
 	
 	json.Unmarshal(r, &dl)
 	
-	d.VdiskUuid = dl.VdiskUUID
+	return dl.VdiskUUID
 		
 }
 
-func GetNetworkID(n *NTNXConnection,net *Network) {
+func GetNetworkIDbyName(n *NTNXConnection,Name string) string {
 
-	fmt.Println(NutanixRestURL(n)+"networks/?filterCriteria=name%3D%3D"+net.Name)
+	fmt.Println(NutanixRestURL(n)+"networks/?filterCriteria=name%3D%3D"+Name)
 
-	resp := NutanixAPIGet(n,NutanixAHVurl(n),"networks/?filterCriteria=name%3D%3D"+net.Name)
+	resp := NutanixAPIGet(n,NutanixAHVurl(n),"networks/?filterCriteria=name%3D%3D"+Name)
 	
 	var netl NetworkList
 		
 	json.Unmarshal(resp, &netl)
 	
-	net.UUID = netl.Entities[0].UUID
-	
-	fmt.Println(net.UUID)
+	// TODO check if field is empty or > 1
+	return netl.Entities[0].UUID
 }
 
 func CreateVNicforVM (n *NTNXConnection,v *VM, net *Network) {
