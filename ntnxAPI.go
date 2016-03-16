@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"bytes"
 	"fmt"
-
 )
 
 type NTNXConnection struct {
@@ -536,15 +535,16 @@ func GetContainer(n *NTNXConnection) []byte {
 
 }
 
-func VMExist(n *NTNXConnection, v *VM) bool {
-	
-
+func VMExist(n *NTNXConnection, v *VM) (bool) {
 	
 	resp := NutanixAPIGet(n,NutanixAHVurl(n),"vms")
 	
 	var vl VMList_AHV
 	
-	json.Unmarshal(resp, &vl)
+	
+	if err := json.Unmarshal(resp, &vl)	; err != nil {
+		panic(err)		
+	}
 	
 	s := vl.Entities
 	
@@ -559,26 +559,40 @@ func VMExist(n *NTNXConnection, v *VM) bool {
 	
 } 
 
-func GetVMIDbyName(n *NTNXConnection, Name string) string {
-	//VM Names are not unique. Returns the first found
+func GetVMIDbyName(n *NTNXConnection, Name string) (string, error) {
+	//VM Names are not unique. Returns the last found 
+	//raises an error if more than one found
 	
 	resp := NutanixAPIGet(n,NutanixAHVurl(n),"vms")
 	
 	var vl VMList_AHV
 	
-	json.Unmarshal(resp, &vl)	
-
+	if err := json.Unmarshal(resp, &vl)	; err != nil {
+		panic(err)		
+	}
+		
 	s := vl.Entities
 				
 	// TODO FilterCriteria seems not to work in 4.5 
 	// Return error when > 1 found and not found
+	var c int = 0
+	
 	for i:= 0; i < len(s); i++ {
 		if s[i].Config.Name == Name {			
-			return s[i].UUID
+			c++
+			// if the last one in the response is reached
+			if (i == len(s)-1) {
+				// and more than one is found	
+				if  (c>1) {
+				 return s[i].UUID, fmt.Errorf("NOT UNIQUE")
+				} else { // exact one is found
+				return s[i].UUID, nil
+				}
+			}
 		}
 	}	
-    		
-    return ""
+	   		
+    return "",fmt.Errorf("NOT FOUND")
     		
 }
 
@@ -649,7 +663,7 @@ func CreateVDisk(n *NTNXConnection,d *VDisk) {
 func CreateVDiskforVM (n *NTNXConnection,v *VM, d *VDisk) {
 	
 		
-	var jsonStr = []byte(`{ "disks": [  { "vmDiskCreate":  { "sizeMb": "`+d.MaxCapacityBytes+`", "containerId": "`+d.ContainerID+`" }} ] }`)	
+	var jsonStr = []byte(`{ "disks": [  { "vmDiskCreate":  { "sizeMb": "`+d.MaxCapacityBytes+`", "containerId": "`+d.ContainerID+`"}} ] }`)	
 	
 	fmt.Println(string(jsonStr)+"vms/"+v.UUID+"/disks/");
 	
@@ -712,17 +726,20 @@ func GetVMState(n *NTNXConnection,vm *VM) string {
 func GetVMIP(n *NTNXConnection,vm *VM) (string, error) {
 	
 	resp := NutanixAPIGet(n,NutanixRestURL(n),"vms/"+vm.UUID)
+	fmt.Println(NutanixRestURL(n),"vms/"+vm.UUID)
 	
-	var vm_REST VM_json_REST
+	var vm_REST VM_json_REST	
 	
-	err := json.Unmarshal(resp, &vm_REST)
-	
+	if err := json.Unmarshal(resp, &vm_REST); err != nil {
+		panic(err)		
+	}
+
 	if (len(vm_REST.IPAddresses)>0) {
 		fmt.Println(vm_REST.IPAddresses[0])
 		return vm_REST.IPAddresses[0], nil
 		}	
 	
-	return "", err
+	return "", fmt.Errorf("NO IP FOUND")
 }
 
 
