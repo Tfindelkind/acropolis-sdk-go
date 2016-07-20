@@ -1,59 +1,56 @@
 package ntnxAPI
 
 import (
-
-	"net/http"	
+	"bytes"
 	"crypto/tls"
-	"io/ioutil"
-	"log"
 	"encoding/base64"
 	"encoding/json"
-	"bytes"
 	"fmt"
+	"io/ioutil"
+	"log"
+	"net/http"
 )
 
 type NTNXConnection struct {
-	
-	NutanixHost 	string
-	Username		string
-	Password		string
-	SEnc 			string 
-	HttpClient 		http.Client	
+	NutanixHost string
+	Username    string
+	Password    string
+	SEnc        string
+	HttpClient  http.Client
 }
 
 type VM struct {
-	MemoryMB		string 
-	Name			string 
-	Vcpus			string 
-	VLAN			string
-	UUID			string
+	MemoryMB string
+	Name     string
+	Vcpus    string
+	VLAN     string
+	UUID     string
 }
 
 type Task struct {
 }
 
 type Image struct {
-	Name			string
-	Annotation		string
-	ImageType		string
-	UUID			string
-	VMDiskID		string
-	
+	Name       string
+	Annotation string
+	ImageType  string
+	UUID       string
+	VMDiskID   string
 }
 
 type VDisk struct {
-	ContainerName		string
-	ContainerID			string
-	Name				string
-	MaxCapacityBytes	string
-	VdiskUuid 			string
-	IsCD				bool
+	ContainerName    string
+	ContainerID      string
+	Name             string
+	MaxCapacityBytes string
+	VdiskUuid        string
+	IsCD             bool
 }
 
 type Network struct {
-	Name             string 
-	UUID             string 
-	VlanID           int    
+	Name   string
+	UUID   string
+	VlanID int
 }
 
 type VMList_AHV struct {
@@ -72,7 +69,6 @@ type VMList_AHV struct {
 		TotalEntities      int `json:"totalEntities"`
 	} `json:"metadata"`
 }
-
 
 type ImageList_AHV struct {
 	Entities []struct {
@@ -268,7 +264,6 @@ type VM_json_AHV struct {
 	UUID             string `json:"uuid"`
 }
 
-
 type VM_json_REST struct {
 	AcropolisVM                   bool        `json:"acropolisVm"`
 	ClusterUUID                   string      `json:"clusterUuid"`
@@ -402,35 +397,34 @@ type VM_json_REST struct {
 	VMName          string   `json:"vmName"`
 }
 
-
 type VDisk_json_REST struct {
-		ClusterUUID                    string        `json:"clusterUuid"`
-		ContainerID                    string        `json:"containerId"`
-		ContainerName                  string        `json:"containerName"`
-		CreationTimeInMicrosSinceEpoch int           `json:"creationTimeInMicrosSinceEpoch"`
-		Disabled                       bool          `json:"disabled"`
-		ErasureCode                    string        `json:"erasureCode"`
-		ErasureCodeDelaySecs           interface{}   `json:"erasureCodeDelaySecs"`
-		FingerPrintOnWrite             string        `json:"fingerPrintOnWrite"`
-		Immutable                      bool          `json:"immutable"`
-		IscsiLun                       int           `json:"iscsiLun"`
-		IscsiTargetName                string        `json:"iscsiTargetName"`
-		MarkedForRemoval               bool          `json:"markedForRemoval"`
-		MaxCapacityBytes               int           `json:"maxCapacityBytes"`
-		Name                           string        `json:"name"`
-		NfsFile                        bool          `json:"nfsFile"`
-		NfsFileName                    string        `json:"nfsFileName"`
-		OnDiskDedup                    string        `json:"onDiskDedup"`
-		ParentNfsFileName              string        `json:"parentNfsFileName"`
-		QosFairshare                   interface{}   `json:"qosFairshare"`
-		QosPriority                    interface{}   `json:"qosPriority"`
-		Shared                         bool          `json:"shared"`
-		Snapshot                       bool          `json:"snapshot"`
-		Snapshots                      []interface{} `json:"snapshots"`
-		StoragePoolID                  string        `json:"storagePoolId"`
-		StoragePoolName                string        `json:"storagePoolName"`
-		TotalReservedCapacityBytes     interface{}   `json:"totalReservedCapacityBytes"`
-		VdiskUUID                      string        `json:"vdiskUuid"`
+	ClusterUUID                    string        `json:"clusterUuid"`
+	ContainerID                    string        `json:"containerId"`
+	ContainerName                  string        `json:"containerName"`
+	CreationTimeInMicrosSinceEpoch int           `json:"creationTimeInMicrosSinceEpoch"`
+	Disabled                       bool          `json:"disabled"`
+	ErasureCode                    string        `json:"erasureCode"`
+	ErasureCodeDelaySecs           interface{}   `json:"erasureCodeDelaySecs"`
+	FingerPrintOnWrite             string        `json:"fingerPrintOnWrite"`
+	Immutable                      bool          `json:"immutable"`
+	IscsiLun                       int           `json:"iscsiLun"`
+	IscsiTargetName                string        `json:"iscsiTargetName"`
+	MarkedForRemoval               bool          `json:"markedForRemoval"`
+	MaxCapacityBytes               int           `json:"maxCapacityBytes"`
+	Name                           string        `json:"name"`
+	NfsFile                        bool          `json:"nfsFile"`
+	NfsFileName                    string        `json:"nfsFileName"`
+	OnDiskDedup                    string        `json:"onDiskDedup"`
+	ParentNfsFileName              string        `json:"parentNfsFileName"`
+	QosFairshare                   interface{}   `json:"qosFairshare"`
+	QosPriority                    interface{}   `json:"qosPriority"`
+	Shared                         bool          `json:"shared"`
+	Snapshot                       bool          `json:"snapshot"`
+	Snapshots                      []interface{} `json:"snapshots"`
+	StoragePoolID                  string        `json:"storagePoolId"`
+	StoragePoolName                string        `json:"storagePoolName"`
+	TotalReservedCapacityBytes     interface{}   `json:"totalReservedCapacityBytes"`
+	VdiskUUID                      string        `json:"vdiskUuid"`
 }
 
 type NetworkList_REST struct {
@@ -451,370 +445,350 @@ type NetworkList_REST struct {
 	} `json:"metadata"`
 }
 
-
-func EncodeCredentials (n *NTNXConnection) {
-   n.SEnc = base64.StdEncoding.EncodeToString([]byte(n.Username+":"+n.Password))  
+func EncodeCredentials(n *NTNXConnection) {
+	n.SEnc = base64.StdEncoding.EncodeToString([]byte(n.Username + ":" + n.Password))
 }
 
 func NutanixAHVurl(n *NTNXConnection) string {
 
-	return  "https://"+n.NutanixHost+":9440/api/nutanix/v0.8/"
-	
+	return "https://" + n.NutanixHost + ":9440/api/nutanix/v0.8/"
+
 }
 
 func NutanixRestURL(n *NTNXConnection) string {
 
-	return  "https://"+n.NutanixHost+":9440/PrismGateway/services/rest/v1/"
-	
+	return "https://" + n.NutanixHost + ":9440/PrismGateway/services/rest/v1/"
+
 }
 
+func CreateHttpClient(n *NTNXConnection) {
 
-func CreateHttpClient(n *NTNXConnection)  {
-	
 	// Ignore certificats which can not be validated (Nutanix CE edition)
-    tr := &http.Transport{
-        TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-    }
-	
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
 	n.HttpClient = http.Client{Transport: tr}
 }
 
+func NutanixAPIGet(n *NTNXConnection, NutanixAPIurl string, NutanixURI string) []byte {
 
-func NutanixAPIGet (n *NTNXConnection,NutanixAPIurl string, NutanixURI string) []byte {
-	
-	
 	var req *http.Request
 	var err error
-	
-	
-	
+
 	req, err = http.NewRequest("GET", NutanixAPIurl+NutanixURI, nil)
-    req.Header.Set("Authorization", "Basic "+n.SEnc)
-    
-	
+	req.Header.Set("Authorization", "Basic "+n.SEnc)
+
 	resp, err := n.HttpClient.Do(req)
-    if err != nil{
-        log.Fatal(err)
-    }
-    bodyText, err := ioutil.ReadAll(resp.Body)
-   
-    return bodyText 
-	
+	if err != nil {
+		log.Fatal(err)
+	}
+	bodyText, err := ioutil.ReadAll(resp.Body)
+
+	return bodyText
+
 }
 
+func NutanixAPIPost(n *NTNXConnection, NutanixAPIurl string, NutanixURI string, body *bytes.Buffer) []byte {
 
-func NutanixAPIPost (n *NTNXConnection,NutanixAPIurl string,NutanixURI string, body *bytes.Buffer) []byte {
-	
 	var req *http.Request
 	var err error
-	
-	
-	req, err = http.NewRequest("POST", NutanixAPIurl+NutanixURI,body)
-    req.Header.Set("Authorization", "Basic "+n.SEnc)
-	
+
+	req, err = http.NewRequest("POST", NutanixAPIurl+NutanixURI, body)
+	req.Header.Set("Authorization", "Basic "+n.SEnc)
+
 	resp, err := n.HttpClient.Do(req)
-    if err != nil{
-        log.Fatal(err)
-    }
-    bodyText, err := ioutil.ReadAll(resp.Body)
-    
-    return bodyText
-	
+	if err != nil {
+		log.Fatal(err)
+	}
+	bodyText, err := ioutil.ReadAll(resp.Body)
+
+	return bodyText
+
 }
 
 func GetCluster(n *NTNXConnection) []byte {
-	
-	return NutanixAPIGet(n,NutanixRestURL(n),"cluster");
+
+	return NutanixAPIGet(n, NutanixRestURL(n), "cluster")
 
 }
 
 func GetContainer(n *NTNXConnection) []byte {
-	
-	
-	return NutanixAPIGet(n,NutanixRestURL(n),"containers");
+
+	return NutanixAPIGet(n, NutanixRestURL(n), "containers")
 
 }
 
-func VMExist(n *NTNXConnection, v *VM) (bool) {
-	
-	resp := NutanixAPIGet(n,NutanixAHVurl(n),"vms")
-	
+func VMExist(n *NTNXConnection, v *VM) bool {
+
+	resp := NutanixAPIGet(n, NutanixAHVurl(n), "vms")
+
 	var vl VMList_AHV
-	
-	
-	if err := json.Unmarshal(resp, &vl)	; err != nil {
-		panic(err)		
+
+	if err := json.Unmarshal(resp, &vl); err != nil {
+		panic(err)
 	}
-	
+
 	s := vl.Entities
-	
-	for i:= 0; i < len(s); i++ {
+
+	for i := 0; i < len(s); i++ {
 		if s[i].Config.Name == v.Name {
 			return true
 		}
-		
+
 	}
-	
+
 	return false
-	
-} 
+
+}
 
 func GetVMIDbyName(n *NTNXConnection, Name string) (string, error) {
-	//VM Names are not unique. Returns the last found 
+	//VM Names are not unique. Returns the last found
 	//raises an error if more than one found
-	
-	resp := NutanixAPIGet(n,NutanixAHVurl(n),"vms")
-	
+
+	resp := NutanixAPIGet(n, NutanixAHVurl(n), "vms")
+
 	var vl VMList_AHV
-	
-	if err := json.Unmarshal(resp, &vl)	; err != nil {
-		panic(err)		
+
+	if err := json.Unmarshal(resp, &vl); err != nil {
+		panic(err)
 	}
-		
+
 	s := vl.Entities
-				
-	// TODO FilterCriteria seems not to work in 4.5 
+
+	// TODO FilterCriteria seems not to work in 4.5
 	// Return error when > 1 found and not found
 	var c int = 0
-	
-	for i:= 0; i < len(s); i++ {
-		if s[i].Config.Name == Name {			
+
+	for i := 0; i < len(s); i++ {
+		if s[i].Config.Name == Name {
 			c++
 			// if the last one in the response is reached
-			if (i == len(s)-1) {
-				// and more than one is found	
-				if  (c>1) {
-				 return s[i].UUID, fmt.Errorf("NOT UNIQUE")
+			if i == len(s)-1 {
+				// and more than one is found
+				if c > 1 {
+					return s[i].UUID, fmt.Errorf("NOT UNIQUE")
 				} else { // exact one is found
-				return s[i].UUID, nil
+					return s[i].UUID, nil
 				}
 			}
 		}
-	}	
-	   		
-    return "",fmt.Errorf("NOT FOUND")
-    		
+	}
+
+	return "", fmt.Errorf("NOT FOUND")
+
 }
 
 func CreateVM(n *NTNXConnection, v *VM) {
-	
-	var jsonStr = []byte(`{"memoryMb": "`+v.MemoryMB+`", "name": "`+v.Name+`", "numVcpus": "`+v.Vcpus+`"}`)	
-	
-	resp := NutanixAPIPost(n,NutanixAHVurl(n),"vms",bytes.NewBuffer(jsonStr))
-	
-	fmt.Println(resp);
-	
+
+	var jsonStr = []byte(`{"memoryMb": "` + v.MemoryMB + `", "name": "` + v.Name + `", "numVcpus": "` + v.Vcpus + `"}`)
+
+	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms", bytes.NewBuffer(jsonStr))
+
+	fmt.Println(resp)
+
 }
 
 func ImageExist(n *NTNXConnection, im *Image) bool {
-	
+
 	// Image names are not unique so using FilterCriteria could return > 1 value
-	resp := NutanixAPIGet(n,NutanixAHVurl(n),"images")
-	
+	resp := NutanixAPIGet(n, NutanixAHVurl(n), "images")
+
 	var iml ImageList_AHV
-	
+
 	json.Unmarshal(resp, &iml)
-	
+
 	s := iml.Entities
-	
-	for i:= 0; i < len(s); i++ {
+
+	for i := 0; i < len(s); i++ {
 		if s[i].Name == im.Name {
 			im.UUID = s[i].UUID
 			im.VMDiskID = s[i].VMDiskID
 			return true
 		}
-		
+
 	}
-	
+
 	return false
-	
+
 }
 
-func GetContainerIDbyName(n *NTNXConnection,ContainerName string) string {
-	
-	resp := NutanixAPIGet(n,NutanixRestURL(n),"containers?filterCriteria=container_name%3D%3D"+ContainerName)
-	
+func GetContainerIDbyName(n *NTNXConnection, ContainerName string) string {
+
+	resp := NutanixAPIGet(n, NutanixRestURL(n), "containers?filterCriteria=container_name%3D%3D"+ContainerName)
+
 	var c Container_json_REST
-		
+
 	json.Unmarshal(resp, &c)
-	
+
 	s := c.Entities
-	
+
 	if len(s) == 0 {
 		fmt.Println("container not found")
 	}
-	
+
 	if len(s) > 1 {
 		// return error (container is not unique)
 	}
-	
+
 	return s[0].ID
 }
 
-func CreateVDisk(n *NTNXConnection,d *VDisk) {	
-	
-	var jsonStr = []byte(`{"containerId": "`+d.ContainerID+`", "name": "`+d.Name+`", "maxCapacityBytes": "`+d.MaxCapacityBytes+`"}`)
-		
-	resp := NutanixAPIPost(n,NutanixRestURL(n),"vdisks",bytes.NewBuffer(jsonStr))
-	
-	fmt.Println(resp);
-} 
+func CreateVDisk(n *NTNXConnection, d *VDisk) {
 
-func CreateVDiskforVM (n *NTNXConnection,v *VM, d *VDisk) {
-	
-		
-	var jsonStr = []byte(`{ "disks": [  { "vmDiskCreate":  { "sizeMb": "`+d.MaxCapacityBytes+`", "containerId": "`+d.ContainerID+`"}} ] }`)	
-	
-	fmt.Println(string(jsonStr)+"vms/"+v.UUID+"/disks/");
-	
-	resp := NutanixAPIPost(n,NutanixAHVurl(n),"vms/"+v.UUID+"/disks/",bytes.NewBuffer(jsonStr))
-	
-	fmt.Println(resp);
+	var jsonStr = []byte(`{"containerId": "` + d.ContainerID + `", "name": "` + d.Name + `", "maxCapacityBytes": "` + d.MaxCapacityBytes + `"}`)
+
+	resp := NutanixAPIPost(n, NutanixRestURL(n), "vdisks", bytes.NewBuffer(jsonStr))
+
+	fmt.Println(resp)
+}
+
+func CreateVDiskforVM(n *NTNXConnection, v *VM, d *VDisk) {
+
+	var jsonStr = []byte(`{ "disks": [  { "vmDiskCreate":  { "sizeMb": "` + d.MaxCapacityBytes + `", "containerId": "` + d.ContainerID + `"}} ] }`)
+
+	fmt.Println(string(jsonStr) + "vms/" + v.UUID + "/disks/")
+
+	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/disks/", bytes.NewBuffer(jsonStr))
+
+	fmt.Println(resp)
 
 }
 
-func CloneCDforVM (n *NTNXConnection,v *VM, im *Image) {
-		
-	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "`+im.VMDiskID+`" } , "isCdrom" : "true"} ] }`)
-	
+func CloneCDforVM(n *NTNXConnection, v *VM, im *Image) {
+
+	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "` + im.VMDiskID + `" } , "isCdrom" : "true"} ] }`)
+
 	fmt.Println(string(jsonStr))
-		
-	resp := NutanixAPIPost(n,NutanixAHVurl(n),"vms/"+v.UUID+"/disks/",bytes.NewBuffer(jsonStr))
-	
-	fmt.Println(resp);
-	
+
+	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/disks/", bytes.NewBuffer(jsonStr))
+
+	fmt.Println(resp)
+
 }
 
-func GetImageIDbyName(n *NTNXConnection,Name string) string {
+func GetImageIDbyName(n *NTNXConnection, Name string) string {
 
+	fmt.Println(NutanixAHVurl(n), "images/?filterCriteria=name%3D%3D"+Name)
 
-	fmt.Println(NutanixAHVurl(n),"images/?filterCriteria=name%3D%3D"+Name)
+	resp := NutanixAPIGet(n, NutanixAHVurl(n), "images/?filterCriteria=name%3D%3D"+Name)
 
-	resp := NutanixAPIGet(n,NutanixAHVurl(n),"images/?filterCriteria=name%3D%3D"+Name)
-	
 	var iml ImageList_AHV
-	
+
 	json.Unmarshal(resp, &iml)
-	
+
 	s := iml.Entities
-	
-	for i:= 0; i < len(s); i++ {
+
+	for i := 0; i < len(s); i++ {
 		if s[i].Name == Name {
 			//im.UUID = s[i].UUID
 			//im.VMDiskID = s[i].VMDiskID
 			return s[i].VMDiskID
 		}
-		
+
 	}
-	
+
 	return "NOT FOUND"
 }
 
+func GetVMState(n *NTNXConnection, vm *VM) string {
 
-func GetVMState(n *NTNXConnection,vm *VM) string {
-	
-	resp := NutanixAPIGet(n,NutanixAHVurl(n),"vms/"+vm.UUID)
-	
+	resp := NutanixAPIGet(n, NutanixAHVurl(n), "vms/"+vm.UUID)
+
 	var vm_AHV VM_json_AHV
-	
-	json.Unmarshal(resp, &vm_AHV)	
-	
-	return vm_AHV.State	
-	
+
+	json.Unmarshal(resp, &vm_AHV)
+
+	return vm_AHV.State
+
 }
 
-func GetVMIP(n *NTNXConnection,vm *VM) (string, error) {
-	
-	resp := NutanixAPIGet(n,NutanixRestURL(n),"vms/"+vm.UUID)
-	fmt.Println(NutanixRestURL(n),"vms/"+vm.UUID)
-	
-	var vm_REST VM_json_REST	
-	
+func GetVMIP(n *NTNXConnection, vm *VM) (string, error) {
+
+	resp := NutanixAPIGet(n, NutanixRestURL(n), "vms/"+vm.UUID)
+	fmt.Println(NutanixRestURL(n), "vms/"+vm.UUID)
+
+	var vm_REST VM_json_REST
+
 	if err := json.Unmarshal(resp, &vm_REST); err != nil {
-		panic(err)		
+		panic(err)
 	}
 
-	if (len(vm_REST.IPAddresses)>0) {
+	if len(vm_REST.IPAddresses) > 0 {
 		fmt.Println(vm_REST.IPAddresses[0])
 		return vm_REST.IPAddresses[0], nil
-		}	
-	
+	}
+
 	return "", fmt.Errorf("NO IP FOUND")
 }
 
+func GetVDiskIDbyName(n *NTNXConnection, Name string) string {
 
-func GetVDiskIDbyName(n *NTNXConnection,Name string) string {
-	
-	
-	resp := NutanixAPIGet(n,NutanixRestURL(n),`vdisks/?vdiskNames=`+Name)
-	
-	//remove "[" at begin and end "]" before Unmarshal	
-	r := resp[1:len(resp)-1] 
-	
-	fmt.Println(string(r)) 
-	
+	resp := NutanixAPIGet(n, NutanixRestURL(n), `vdisks/?vdiskNames=`+Name)
+
+	//remove "[" at begin and end "]" before Unmarshal
+	r := resp[1 : len(resp)-1]
+
+	fmt.Println(string(r))
+
 	var dl VDisk_json_REST
-	
+
 	json.Unmarshal(r, &dl)
-	
+
 	return dl.VdiskUUID
-		
+
 }
 
-func GetNetworkIDbyName(n *NTNXConnection,Name string) string {
+func GetNetworkIDbyName(n *NTNXConnection, Name string) string {
 
-	fmt.Println(NutanixRestURL(n)+"networks/?filterCriteria=name%3D%3D"+Name)
+	fmt.Println(NutanixRestURL(n) + "networks/?filterCriteria=name%3D%3D" + Name)
 
-	resp := NutanixAPIGet(n,NutanixAHVurl(n),"networks/?filterCriteria=name%3D%3D"+Name)
-	
+	resp := NutanixAPIGet(n, NutanixAHVurl(n), "networks/?filterCriteria=name%3D%3D"+Name)
+
 	var netl NetworkList_REST
-		
+
 	json.Unmarshal(resp, &netl)
-	
+
 	// TODO check if field is empty or > 1
 	return netl.Entities[0].UUID
 }
 
-func CreateVNicforVM (n *NTNXConnection,v *VM, net *Network) {
-	
-	var jsonStr = []byte(`{ "specList": [ {"networkUuid": "`+net.UUID+`"} ] }`)
-		
-	resp := NutanixAPIPost(n,NutanixAHVurl(n),"vms/"+v.UUID+"/nics/",bytes.NewBuffer(jsonStr))
-	
+func CreateVNicforVM(n *NTNXConnection, v *VM, net *Network) {
+
+	var jsonStr = []byte(`{ "specList": [ {"networkUuid": "` + net.UUID + `"} ] }`)
+
+	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/nics/", bytes.NewBuffer(jsonStr))
+
 	fmt.Println(string(resp))
-	
+
 }
 
 //func Poll_task(n *NTNX,t task
 
+func StartVM(n *NTNXConnection, v *VM) {
 
-func StartVM(n *NTNXConnection,v *VM)  {
-	
 	var jsonStr = []byte(`{}`)
-	
-	
-	resp := NutanixAPIPost(n,NutanixAHVurl(n),"vms/"+v.UUID+"/power_op/on",bytes.NewBuffer(jsonStr))
-	
+
+	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/power_op/on", bytes.NewBuffer(jsonStr))
+
 	fmt.Println(string(resp))
-	
+
 }
 
-func StopVM(n *NTNXConnection,v *VM) {
-	
+func StopVM(n *NTNXConnection, v *VM) {
+
 	var jsonStr = []byte(`{}`)
-	
-	
-	resp := NutanixAPIPost(n,NutanixAHVurl(n),"vms/"+v.UUID+"/power_op/off",bytes.NewBuffer(jsonStr))
-	
+
+	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/power_op/off", bytes.NewBuffer(jsonStr))
+
 	fmt.Println(string(resp))
 }
 
-func DeleteVM(n *NTNXConnection,v *VM) {
-	
+func DeleteVM(n *NTNXConnection, v *VM) {
+
 	var jsonStr = []byte(`{}`)
-	
-	resp := NutanixAPIPost(n,NutanixAHVurl(n),"vms/"+v.UUID,bytes.NewBuffer(jsonStr))
-	
+
+	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID, bytes.NewBuffer(jsonStr))
+
 	fmt.Println(string(resp))
 }
-
