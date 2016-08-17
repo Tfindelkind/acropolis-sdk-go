@@ -1,7 +1,6 @@
 package ntnxAPI
 
 import (
-
 	"encoding/json"
 	"fmt"
 )
@@ -24,17 +23,16 @@ type NetworkList_REST struct {
 	} `json:"metadata"`
 }
 
+func GetNetworkIDbyName(n *NTNXConnection, Name string) string {
 
-func GetNetworkIDbyName(n *NTNXConnection,Name string) string {
+	fmt.Println(NutanixRestURL(n) + "networks/?filterCriteria=name%3D%3D" + Name)
 
-	fmt.Println(NutanixRestURL(n)+"networks/?filterCriteria=name%3D%3D"+Name)
+	resp := NutanixAPIGet(n, NutanixAHVurl(n), "networks/?filterCriteria=name%3D%3D"+Name)
 
-	resp := NutanixAPIGet(n,NutanixAHVurl(n),"networks/?filterCriteria=name%3D%3D"+Name)
-	
 	var netl NetworkList_REST
-		
+
 	json.Unmarshal(resp, &netl)
-	
+
 	// TODO check if field is empty or > 1
 	return netl.Entities[0].UUID
 }

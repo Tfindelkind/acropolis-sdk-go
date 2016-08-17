@@ -1,7 +1,6 @@
 package ntnxAPI
 
 import (
-
 	"encoding/json"
 	"fmt"
 )
@@ -148,34 +147,30 @@ type Container_json_REST struct {
 	} `json:"metadata"`
 }
 
-
 func GetContainer(n *NTNXConnection) []byte {
-	
-	
-	
-	return NutanixAPIGet(n,NutanixRestURL(n),"containers");
+
+	return NutanixAPIGet(n, NutanixRestURL(n), "containers")
 
 }
 
-func GetContainerIDbyName(n *NTNXConnection,ContainerName string) string {
-	
-	resp := NutanixAPIGet(n,NutanixRestURL(n),"containers?filterCriteria=container_name%3D%3D"+ContainerName)
-	
+func GetContainerIDbyName(n *NTNXConnection, ContainerName string) (string,error) {
+
+	resp := NutanixAPIGet(n, NutanixRestURL(n), "containers?filterCriteria=container_name%3D%3D"+ContainerName)
+
 	var c Container_json_REST
-		
+
 	json.Unmarshal(resp, &c)
-	
+
 	s := c.Entities
-	
+
 	if len(s) == 0 {
-		fmt.Println("container not found")
+		return "", fmt.Errorf("container not found")
 	}
-	
+
 	if len(s) > 1 {
 		// return error (container is not unique)
-		
-	}
-	
-	return s[0].ID
-}
 
+	}
+
+	return s[0].ID, nil
+}

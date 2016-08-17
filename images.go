@@ -1,10 +1,9 @@
 package ntnxAPI
 
 import (
-
+	"bytes"
 	"encoding/json"
 	"fmt"
-	"bytes"	
 )
 
 type ImageList_AHV struct {
@@ -27,67 +26,62 @@ type ImageList_AHV struct {
 	} `json:"metadata"`
 }
 
+func GetImageIDbyName(n *NTNXConnection, Name string) string {
 
-func GetImageIDbyName(n *NTNXConnection,Name string) string {
+	fmt.Println(NutanixAHVurl(n), "images/?filterCriteria=name%3D%3D"+Name)
 
+	resp := NutanixAPIGet(n, NutanixAHVurl(n), "images/?filterCriteria=name%3D%3D"+Name)
 
-	fmt.Println(NutanixAHVurl(n),"images/?filterCriteria=name%3D%3D"+Name)
-
-	resp := NutanixAPIGet(n,NutanixAHVurl(n),"images/?filterCriteria=name%3D%3D"+Name)
-	
 	var iml ImageList_AHV
-	
+
 	json.Unmarshal(resp, &iml)
-	
+
 	s := iml.Entities
-	
-	for i:= 0; i < len(s); i++ {
+
+	for i := 0; i < len(s); i++ {
 		if s[i].Name == Name {
 			//im.UUID = s[i].UUID
 			//im.VMDiskID = s[i].VMDiskID
 			return s[i].VMDiskID
 		}
-		
+
 	}
-	
+
 	return "NOT FOUND"
 }
 
 func ImageExist(n *NTNXConnection, im *Image) bool {
-	
+
 	// Image names are not unique so using FilterCriteria could return > 1 value
-	resp := NutanixAPIGet(n,NutanixAHVurl(n),"images")
-	
+	resp := NutanixAPIGet(n, NutanixAHVurl(n), "images")
+
 	var iml ImageList_AHV
-	
+
 	json.Unmarshal(resp, &iml)
-	
+
 	s := iml.Entities
-	
-	for i:= 0; i < len(s); i++ {
+
+	for i := 0; i < len(s); i++ {
 		if s[i].Name == im.Name {
 			im.UUID = s[i].UUID
 			im.VMDiskID = s[i].VMDiskID
 			return true
 		}
-		
+
 	}
-	
+
 	return false
-	
+
 }
 
+func CloneCDforVM(n *NTNXConnection, v *VM, im *Image) {
 
-func CloneCDforVM (n *NTNXConnection,v *VM, im *Image) {
-		
-	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "`+im.VMDiskID+`" } , "isCdrom" : "true"} ] }`)
-	
+	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "` + im.VMDiskID + `" } , "isCdrom" : "true"} ] }`)
+
 	fmt.Println(string(jsonStr))
-		
-	resp := NutanixAPIPost(n,NutanixAHVurl(n),"vms/"+v.VmId+"/disks/",bytes.NewBuffer(jsonStr))
-	
-	fmt.Println(resp);
-	
+
+	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId+"/disks/", bytes.NewBuffer(jsonStr))
+
+	fmt.Println(resp)
+
 }
-
-
