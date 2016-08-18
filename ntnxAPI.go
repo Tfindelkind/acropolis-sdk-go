@@ -6,9 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	//"encoding/json"
 	"bytes"
-	//"fmt"
 )
 
 // Helper structs. They do not represent the full nutanix REST API
@@ -22,30 +20,34 @@ type NTNXConnection struct {
 }
 
 type VM struct {
-	MemoryMB string
-	Name     string
-	Vcpus    string
-	VLAN     string
-	VmId     string
+	Name     	string
+	Description string
+	MemoryMB 	string
+	Vcpus    	string
+	VLAN     	string
+	VmId     	string
 }
 
 type Task struct {
 }
 
 type Image struct {
-	Name       string
-	Annotation string
-	ImageType  string
-	UUID       string
-	VMDiskID   string
+	Name          string
+	Annotation    string
+	ImageType     string
+	UUID          string
+	VMDiskID      string
+	ContainerName string
+	ContainerID   string
 }
 
 type VDisk struct {
 	ContainerName    string
 	ContainerID      string
-	Name             string
+	ContainerUUID    string
+	Name             string	
 	MaxCapacityBytes string
-	VdiskUuid        string
+	VdiskUuid        string	
 	IsCD             bool
 }
 

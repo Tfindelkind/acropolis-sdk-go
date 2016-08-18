@@ -4,38 +4,40 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 type VM_json_AHV struct {
+	UUID string `json:"uuid"`
+	LogicalTimestamp int `json:"logicalTimestamp"`
 	Config struct {
-		MemoryMb int    `json:"memoryMb"`
-		Name     string `json:"name"`
-		NumVcpus int    `json:"numVcpus"`
-		VMDisks  []struct {
+		Name string `json:"name"`
+		Description string `json:"description"`
+		NumVcpus int `json:"numVcpus"`
+		NumCoresPerVcpu int `json:"numCoresPerVcpu"`
+		MemoryMb int `json:"memoryMb"`
+		VMDisks []struct {
 			Addr struct {
-				DeviceBus   string `json:"deviceBus"`
-				DeviceIndex int    `json:"deviceIndex"`
+				DeviceBus string `json:"deviceBus"`
+				DeviceIndex int `json:"deviceIndex"`
 			} `json:"addr"`
-			ContainerID       int    `json:"containerId"`
-			ContainerUUID     string `json:"containerUuid"`
-			ID                string `json:"id"`
-			IsCdrom           bool   `json:"isCdrom"`
-			IsEmpty           bool   `json:"isEmpty"`
-			IsSCSIPassthrough bool   `json:"isSCSIPassthrough"`
-			SourceImage       string `json:"sourceImage"`
-			SourceVMDiskUUID  string `json:"sourceVmDiskUuid"`
-			VMDiskUUID        string `json:"vmDiskUuid"`
+			IsCdrom bool `json:"isCdrom"`
+			IsEmpty bool `json:"isEmpty"`
+			SourceImage string `json:"sourceImage"`
+			IsSCSIPassthrough bool `json:"isSCSIPassthrough"`
+			ID string `json:"id"`
+			VMDiskUUID string `json:"vmDiskUuid,omitempty"`
+			SourceVMDiskUUID string `json:"sourceVmDiskUuid,omitempty"`
+			ContainerID int `json:"containerId,omitempty"`
+			ContainerUUID string `json:"containerUuid,omitempty"`
 		} `json:"vmDisks"`
 		VMNics []struct {
-			MacAddress  string `json:"macAddress"`
-			Model       string `json:"model"`
+			MacAddress string `json:"macAddress"`
 			NetworkUUID string `json:"networkUuid"`
+			Model string `json:"model"`
 		} `json:"vmNics"`
 	} `json:"config"`
-	HostUUID         string `json:"hostUuid"`
-	LogicalTimestamp int    `json:"logicalTimestamp"`
-	State            string `json:"state"`
-	UUID             string `json:"uuid"`
+	State string `json:"state"`
 }
 
 type VM_json_REST struct {
@@ -364,7 +366,7 @@ type VMList_json_REST struct {
 
 } */
 
-func VMExist(n *NTNXConnection, v *VM) bool {
+func VMExist(n *NTNXConnection, v *VM) (bool, error) {
 
 	resp := NutanixAPIGet(n, NutanixAHVurl(n), "vms")
 
@@ -375,16 +377,22 @@ func VMExist(n *NTNXConnection, v *VM) bool {
 	}
 
 	s := vl.Entities
+	
+	var c int = 0
 
 	for i := 0; i < len(s); i++ {
 		if s[i].Config.Name == v.Name {
-			return true
+			c++
 		}
-
 	}
-
-	return false
-
+	
+	if c == 1 { 
+		return true, nil 
+	} else if c > 1 { 
+		return true, fmt.Errorf("VM NAME NOT UNIQUE") 
+	} else { 
+		return false , nil
+	}
 }
 
 func GetVMIDbyName(n *NTNXConnection, Name string) (string, error) {
@@ -402,26 +410,45 @@ func GetVMIDbyName(n *NTNXConnection, Name string) (string, error) {
 	s := vl.Entities
 
 	// TODO FilterCriteria seems not to work in 4.5
-	// Return error when > 1 found and not found
+	// Return error when > 1 found and VM not found
 	var c int = 0
+	var last int 
 
-	for i := 0; i < len(s); i++ {
+	for i := 0; i < len(s); i++ {		
 		if s[i].Config.Name == Name {
 			c++
-			// if the last one in the response is reached
-			if i == len(s)-1 {
-				// and more than one is found
+			last = i
+			// if  more than one is found
 				if c > 1 {
-					return s[i].UUID, fmt.Errorf("NOT UNIQUE")
-				} else { // exact one is found
-					return s[i].UUID, nil
-				}
-			}
+					return s[last].UUID, fmt.Errorf("NOT UNIQUE")
+				} 
 		}
 	}
+	
+	if c == 1 {
+	 return s[last].UUID, nil
+	} else
+	{
+	  return "", fmt.Errorf("NOT FOUND") 
+    } 
+}
 
-	return "", fmt.Errorf("NOT FOUND")
+func GetVMbyName(n *NTNXConnection, v *VM) (VM_json_AHV, error) {
+	
+	var  vm_AHV VM_json_AHV
+	
+	VMid, err := GetVMIDbyName(n, v.Name)
+	
+	if err != nil {
+     fmt.Println(err)
+     return vm_AHV, err
+    	}	
+	
+	resp := NutanixAPIGet(n, NutanixAHVurl(n), "vms/"+VMid)
 
+	json.Unmarshal(resp, &vm_AHV)
+	
+	return vm_AHV, err
 }
 
 func CreateVM(n *NTNXConnection, v *VM) {
@@ -431,6 +458,14 @@ func CreateVM(n *NTNXConnection, v *VM) {
 	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms", bytes.NewBuffer(jsonStr))
 
 	fmt.Println(resp)
+
+}
+
+func CreateVM_AHV(n *NTNXConnection, v *VM_json_AHV) {
+
+	var jsonStr = []byte(`{"name": "` + v.Config.Name + `", "description": "` + v.Config.Description + `", "memoryMb": "` + strconv.Itoa(v.Config.MemoryMb) + `", "numVcpus": "` + strconv.Itoa(v.Config.NumVcpus) + `", "numCoresPerVcpu": "` + strconv.Itoa(v.Config.NumCoresPerVcpu)  + `"}`)
+
+	NutanixAPIPost(n, NutanixAHVurl(n), "vms", bytes.NewBuffer(jsonStr))	
 
 }
 

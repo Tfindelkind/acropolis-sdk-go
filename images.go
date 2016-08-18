@@ -4,7 +4,12 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"log"
 )
+
+const (
+NFSvmdiskPath = "/.acropolis/vmdisk/"
+	)
 
 type ImageList_AHV struct {
 	Entities []struct {
@@ -30,7 +35,7 @@ func GetImageIDbyName(n *NTNXConnection, Name string) string {
 
 	fmt.Println(NutanixAHVurl(n), "images/?filterCriteria=name%3D%3D"+Name)
 
-	resp := NutanixAPIGet(n, NutanixAHVurl(n), "images/?filterCriteria=name%3D%3D"+Name)
+	resp := NutanixAPIGet(n,NutanixAHVurl(n), "images/?filterCriteria=name%3D%3D"+Name)
 
 	var iml ImageList_AHV
 
@@ -84,4 +89,29 @@ func CloneCDforVM(n *NTNXConnection, v *VM, im *Image) {
 
 	fmt.Println(resp)
 
+}
+
+func GenerateNFSURIfromVDisk(host string,container_name string, VMDiskID string) string {
+ 
+  return "nfs://"+host+"/"+container_name+NFSvmdiskPath+VMDiskID
+
+}
+
+func CreateImageFromURL(n *NTNXConnection, d *VDisk, im *Image) error {
+	
+	SourceContainerName, err := GetContainerNamebyUUID(n,d.ContainerUUID)
+	
+	if err != nil {
+    log.Fatal(err)
+	}	
+		
+	var jsonStr = []byte(`{ "name": "`+im.Name+`","annotation": "`+im.Annotation+`", "imageType":"DISK_IMAGE", "imageImportSpec": {"containerName": "`+im.ContainerName+`","url":"`+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUuid)+`"} }`)
+
+	fmt.Println(string(jsonStr))
+
+	resp := NutanixAPIPost(n, NutanixAHVurl(n), "images", bytes.NewBuffer(jsonStr))
+
+	fmt.Println(resp)	
+	
+ return nil
 }
