@@ -1,6 +1,9 @@
 package ntnxAPI
 
 import (
+	
+	 log "github.com/Sirupsen/logrus"
+
 	"encoding/json"
 	"fmt"
 )
@@ -323,13 +326,15 @@ type ContainerList_json_REST struct {
 
 func GetContainer(n *NTNXConnection) []byte {
 
-	return NutanixAPIGet(n, NutanixRestURL(n), "containers")
+	resp, _ := NutanixAPIGet(n, NutanixRestURL(n), "containers")
+	
+	return resp
 
 }
 
 func GetContainerIDbyName(n *NTNXConnection, ContainerName string) (string,error) {
 
-	resp := NutanixAPIGet(n, NutanixRestURL(n), "containers?filterCriteria=container_name%3D%3D"+ContainerName)
+	resp, _ := NutanixAPIGet(n, NutanixRestURL(n), "containers?filterCriteria=container_name%3D%3D"+ContainerName)
 
 	var c Container_json_REST
 
@@ -338,20 +343,46 @@ func GetContainerIDbyName(n *NTNXConnection, ContainerName string) (string,error
 	s := c.Entities
 
 	if len(s) == 0 {
-		return "", fmt.Errorf("container not found")
+		log.Warn("Container "+ContainerName+" not found")
+		return "", fmt.Errorf("Container "+ContainerName+" not found")
 	}
 
 	if len(s) > 1 {
 		// return error (container is not unique)
-
+		log.Warn("Container "+ContainerName+" is not unique")
+		return "", fmt.Errorf("Container "+ContainerName+" is not unique")
 	}
 
 	return s[0].ID, nil
 }
 
+func GetContainerUUIDbyName(n *NTNXConnection, ContainerName string) (string,error) {
+
+	resp, _ := NutanixAPIGet(n, NutanixRestURL(n), "containers?filterCriteria=container_name%3D%3D"+ContainerName)
+
+	var c Container_json_REST
+
+	json.Unmarshal(resp, &c)
+
+	s := c.Entities
+
+	if len(s) == 0 {
+		log.Warn("Container "+ContainerName+" not found")
+		return "", fmt.Errorf("Container "+ContainerName+" not found")
+	}
+
+	if len(s) > 1 {
+		// return error (container is not unique)
+		log.Warn("Container "+ContainerName+" is not unique")
+		return "", fmt.Errorf("Container "+ContainerName+" is not unique")
+	}
+
+	return s[0].ContainerUUID, nil
+}
+
 func GetContainerNamebyUUID(n *NTNXConnection, ContainerUUID string) (string,error) {
 
-	resp := NutanixAPIGet(n, NutanixRestURL(n), "containers")
+	resp, _ := NutanixAPIGet(n, NutanixRestURL(n), "containers")
 
 	var c ContainerList_json_REST
 
@@ -365,6 +396,7 @@ func GetContainerNamebyUUID(n *NTNXConnection, ContainerUUID string) (string,err
 		}
     }
 
-	return "", fmt.Errorf("container wiht ID"+ContainerUUID+" not found")
+	log.Warn("container wiht ID: "+ContainerUUID+" not found")
+	return "", fmt.Errorf("container wiht ID: "+ContainerUUID+" not found")
 }
 

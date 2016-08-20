@@ -1,6 +1,9 @@
 package ntnxAPI
 
 import (
+
+	log "github.com/Sirupsen/logrus"
+	
 	"bytes"
 	"encoding/json"
 	"fmt"
@@ -142,7 +145,7 @@ type VDiskList_json_REST []struct {
 
 func GetVDiskIDbyName(n *NTNXConnection, Name string) string {
 
-	resp := NutanixAPIGet(n, NutanixRestURL(n), `vdisks/?vdiskNames=`+Name)
+	resp, _ := NutanixAPIGet(n, NutanixRestURL(n), `vdisks/?vdiskNames=`+Name)
 
 	//remove "[" at begin and end "]" before Unmarshal
 	r := resp[1 : len(resp)-1]
@@ -156,23 +159,36 @@ func GetVDiskIDbyName(n *NTNXConnection, Name string) string {
 }
 
 
-func CreateVDisk(n *NTNXConnection, d *VDisk) {
+func CreateVDisk(n *NTNXConnection, d *VDisk) (TaskUUID,error) {
 
 	var jsonStr = []byte(`{"containerId": "` + d.ContainerID + `", "name": "` + d.Name + `", "maxCapacityBytes": "` + d.MaxCapacityBytes + `"}`)
+	var task TaskUUID
 
-	resp := NutanixAPIPost(n, NutanixRestURL(n), "vdisks", bytes.NewBuffer(jsonStr))
-
-	fmt.Println(resp)
+	resp, statusCode := NutanixAPIPost(n, NutanixRestURL(n), "vdisks", bytes.NewBuffer(jsonStr))
+	
+	if ( statusCode == 200 ) {
+	   json.Unmarshal(resp, &task)	
+       return task, nil
+    } 
+  
+  log.Warn("vDisk "+d.Name+" could not created on container ID "+d.ContainerID)
+  return task, fmt.Errorf("vDisk "+d.Name+" could not created on container ID "+d.ContainerID)
+	
 }
 
-func CloneVDiskforVM(n *NTNXConnection, v *VM, VMDiskUUID string, ContainerID string) {
+func CloneVDiskforVM(n *NTNXConnection, v *VM, VMDiskUUID string, ContainerID string) (TaskUUID,error) {
 
 	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "containerUuid": "` + ContainerID + `" "vmDiskUuid": "` + VMDiskUUID + `" } , "isCdrom" : "false"} ] }`)
+	var task TaskUUID
 
-	fmt.Println(string(jsonStr))
+	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId+"/disks/", bytes.NewBuffer(jsonStr))
+	
+	if ( statusCode == 200 ) {
+	   json.Unmarshal(resp, &task)	
+       return task, nil
+    } 
 
-	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId+"/disks/", bytes.NewBuffer(jsonStr))
-
-	fmt.Println(resp)
+  log.Warn("vDisk could not cloned on container ID "+ContainerID+" from vDISK ID "+VMDiskUUID)
+  return task, fmt.Errorf("vDisk could not cloned on container ID "+ContainerID+" from vDISK ID "+VMDiskUUID)
 
 }

@@ -1,10 +1,12 @@
 package ntnxAPI
 
 import (
+
+	log "github.com/Sirupsen/logrus"
+
 	"bytes"
 	"encoding/json"
-	"fmt"
-	"log"
+	"fmt"	
 )
 
 const (
@@ -31,38 +33,41 @@ type ImageList_AHV struct {
 	} `json:"metadata"`
 }
 
-func GetImageIDbyName(n *NTNXConnection, Name string) string {
+func GetImageIDbyName(n *NTNXConnection, ImageName string) (string,error) {
 
-	fmt.Println(NutanixAHVurl(n), "images/?filterCriteria=name%3D%3D"+Name)
-
-	resp := NutanixAPIGet(n,NutanixAHVurl(n), "images/?filterCriteria=name%3D%3D"+Name)
+	resp, _ := NutanixAPIGet(n,NutanixAHVurl(n), "images/?filterCriteria=name%3D%3D"+ImageName)
 
 	var iml ImageList_AHV
 
 	json.Unmarshal(resp, &iml)
 
+	// TO-DO: Handle if more than one images found
+	
 	s := iml.Entities
 
 	for i := 0; i < len(s); i++ {
-		if s[i].Name == Name {
-			//im.UUID = s[i].UUID
-			//im.VMDiskID = s[i].VMDiskID
-			return s[i].VMDiskID
+		if s[i].Name == ImageName {
+			
+			return s[i].VMDiskID, nil
 		}
 
 	}
-
-	return "NOT FOUND"
+	
+	log.Warn("Image "+ImageName+" not found")
+	return "", fmt.Errorf("Image "+ImageName+" not found")
 }
 
-func ImageExist(n *NTNXConnection, im *Image) bool {
+// Checks if Image exists and fills helper struct with UUID and VMDiskID
+func ImageExistbyName(n *NTNXConnection, im *Image) bool {
 
-	// Image names are not unique so using FilterCriteria could return > 1 value
-	resp := NutanixAPIGet(n, NutanixAHVurl(n), "images")
+	// Image names are not unique so could return > 1 value
+	resp, _ := NutanixAPIGet(n, NutanixAHVurl(n), "images")
 
 	var iml ImageList_AHV
 
 	json.Unmarshal(resp, &iml)
+
+	// TO-DO: Handle if more than one images found
 
 	s := iml.Entities
 
@@ -72,23 +77,17 @@ func ImageExist(n *NTNXConnection, im *Image) bool {
 			im.VMDiskID = s[i].VMDiskID
 			return true
 		}
-
 	}
-
 	return false
-
 }
 
 func CloneCDforVM(n *NTNXConnection, v *VM, im *Image) {
 
 	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "` + im.VMDiskID + `" } , "isCdrom" : "true"} ] }`)
 
-	fmt.Println(string(jsonStr))
+	NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId+"/disks/", bytes.NewBuffer(jsonStr))
 
-	resp := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId+"/disks/", bytes.NewBuffer(jsonStr))
-
-	fmt.Println(resp)
-
+    
 }
 
 func GenerateNFSURIfromVDisk(host string,container_name string, VMDiskID string) string {
@@ -97,21 +96,50 @@ func GenerateNFSURIfromVDisk(host string,container_name string, VMDiskID string)
 
 }
 
-func CreateImageFromURL(n *NTNXConnection, d *VDisk, im *Image) error {
+func CreateImageFromURL(n *NTNXConnection, d *VDisk, im *Image) (TaskUUID,error) {
 	
 	SourceContainerName, err := GetContainerNamebyUUID(n,d.ContainerUUID)
-	
 	if err != nil {
     log.Fatal(err)
 	}	
 		
 	var jsonStr = []byte(`{ "name": "`+im.Name+`","annotation": "`+im.Annotation+`", "imageType":"DISK_IMAGE", "imageImportSpec": {"containerName": "`+im.ContainerName+`","url":"`+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUuid)+`"} }`)
+	var task TaskUUID
 
-	fmt.Println(string(jsonStr))
-
-	resp := NutanixAPIPost(n, NutanixAHVurl(n), "images", bytes.NewBuffer(jsonStr))
-
-	fmt.Println(resp)	
+	resp , statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "images", bytes.NewBuffer(jsonStr))	
 	
- return nil
+	if ( statusCode == 200) {
+		json.Unmarshal(resp, &task)
+		return task, nil
+	 }	
+  
+  log.Warn("Image "+im.Name+" could not created on container "+im.ContainerName+" from "+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUuid))
+  return task,fmt.Errorf("Image "+im.Name+" could not created on container "+im.ContainerName+" from "+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUuid))
 }
+
+func CreateImageObject(n *NTNXConnection, im *Image) (TaskUUID,error) {
+				
+	var jsonStr = []byte(`{ "name": "`+im.Name+`","annotation": "`+im.Annotation+`", "imageType":"`+im.ImageType+`" }`)
+	var task TaskUUID
+	
+	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "images", bytes.NewBuffer(jsonStr))
+	
+	if ( statusCode == 200 ) {
+	   json.Unmarshal(resp, &task)	
+       return task, nil
+    } 
+  
+  log.Warn("Image "+im.Name+" could not created")
+  return task, fmt.Errorf("Image "+im.Name+" could not created")
+
+}
+
+func GetImageIDbyTask(n *NTNXConnection, t *Task_json_REST) string {
+	
+	return t.EntityList[0].UUID
+		
+}
+
+
+
+
