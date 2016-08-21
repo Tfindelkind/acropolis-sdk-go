@@ -365,6 +365,8 @@ func GetContainerUUIDbyName(n *NTNXConnection, ContainerName string) (string,err
 	json.Unmarshal(resp, &c)
 
 	s := c.Entities
+	
+	//fmt.Println(s)
 
 	if len(s) == 0 {
 		log.Warn("Container "+ContainerName+" not found")

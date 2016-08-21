@@ -211,14 +211,16 @@ func GenerateNFSURIfromVDisk(host string,container_name string, VMDiskID string)
 
 }
 
-func CreateImageFromURL(n *NTNXConnection, d *VDisk_json_REST, im *Image_json_AHV) (TaskUUID,error) {
+func CreateImageFromURL(n *NTNXConnection, d *VDisk_json_REST, im *Image_json_AHV, containerName string) (TaskUUID,error) {
 	
 	SourceContainerName, err := GetContainerNamebyUUID(n,d.ContainerID)
 	if err != nil {
     log.Fatal(err)
-	}	
-		
-	var jsonStr = []byte(`{ "name": "`+im.Name+`","annotation": "`+im.Annotation+`", "imageType":"DISK_IMAGE", "imageImportSpec": {"containerUuid ": "`+im.ContainerUUID+`","url":"`+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUUID)+`"} }`)
+	}
+	
+	containerUUID, _ := GetContainerUUIDbyName(n,containerName)
+			
+	var jsonStr = []byte(`{ "name": "`+im.Name+`","annotation": "`+im.Annotation+`", "imageType":"DISK_IMAGE", "imageImportSpec": {"containerUuid": "`+containerUUID+`","url":"`+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUUID)+`"} }`)
 	var task TaskUUID
 
 	resp , statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "images", bytes.NewBuffer(jsonStr))	
@@ -228,8 +230,8 @@ func CreateImageFromURL(n *NTNXConnection, d *VDisk_json_REST, im *Image_json_AH
 		return task, nil
 	 }	
   
-  log.Warn("Image "+im.Name+" could not created on container ID "+im.ContainerUUID+" from "+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUUID))
-  return task,fmt.Errorf("Image "+im.Name+" could not created on container ID "+im.ContainerUUID+" from "+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUUID))
+  log.Warn("Image "+im.Name+" could not created on container ID "+containerUUID+" from "+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUUID))
+  return task,fmt.Errorf("Image "+im.Name+" could not created on container ID "+containerUUID+" from "+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUUID))
 }
 
 func CreateImageObject(n *NTNXConnection, im *Image_json_AHV) (TaskUUID,error) {

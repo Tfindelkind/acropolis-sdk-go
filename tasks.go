@@ -12,7 +12,7 @@ import (
 const (
 
 pullTimeout = "5"
-maxTimeout = "300"
+maxTimeout = "1800"
 succeeded = "Succeeded"
 
 )
@@ -140,6 +140,24 @@ func PollTaskbyTaskUUID(n *NTNXConnection, taskUUID string) (Task_json_REST,bool
 	
 }
 
+func GetTaskPercentageCompletebyTaskUUID(n *NTNXConnection, taskUUID string) (string,error) {
+	
+	var t Task_json_REST
+		
+	resp, statusCode := NutanixAPIGet(n, NutanixAHVurl(n), "tasks/"+taskUUID)
+		
+	if ( statusCode == 200 ) {
+		
+		json.Unmarshal(resp, &t)
+		
+		 return string(t.PercentageComplete), nil		
+		}			    
+	
+	log.Warn("Task "+taskUUID+" not found")
+	return string(t.PercentageComplete), fmt.Errorf("Task "+taskUUID+" not found")	
+	
+}
+
 
 
 func WaitUntilTaskFinished(n *NTNXConnection, taskUUID string) (Task_json_REST,error) {
@@ -164,6 +182,11 @@ func WaitUntilTaskFinished(n *NTNXConnection, taskUUID string) (Task_json_REST,e
 	 if ( finished ) { 
 		 return task, nil
 	 } 
+	 
+	 percentageComplete, err := GetTaskPercentageCompletebyTaskUUID(n,taskUUID)
+	 if ( err != nil) { 
+	  log.Info("Task has "+percentageComplete+"% completed")
+	 }
 	}
 	  
 	log.Warn("Task "+taskUUID+" not found or timedout")
