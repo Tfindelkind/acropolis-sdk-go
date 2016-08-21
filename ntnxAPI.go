@@ -13,52 +13,12 @@ import (
 	"strconv"	
 )
 
-// Helper structs. They do not represent the full Nutanix REST API structs
-
 type NTNXConnection struct {
 	NutanixHost string
 	Username    string
 	Password    string
 	SEnc        string
 	HttpClient  http.Client
-}
-
-type VM struct {
-	Name     	string
-	Description string
-	MemoryMB 	string
-	Vcpus    	string
-	VLAN     	string
-	VmId     	string
-}
-
-type Task struct {
-}
-
-type Image struct {
-	Name          string
-	Annotation    string
-	ImageType     string
-	UUID          string
-	VMDiskID      string
-	ContainerName string
-	ContainerID   string
-}
-
-type VDisk struct {
-	ContainerName    string
-	ContainerID      string
-	ContainerUUID    string
-	Name             string	
-	MaxCapacityBytes string
-	VdiskUuid        string	
-	IsCD             bool
-}
-
-type Network struct {
-	Name   string
-	UUID   string
-	VlanID int
 }
 
 func EncodeCredentials(n *NTNXConnection) {
@@ -161,6 +121,8 @@ func PutFileToImage(n *NTNXConnection, NutanixAPIurl string, NutanixURI string, 
 	req.Header.Set("Connection","keep-alive")
 	
 	DebugRequest(req)
+	
+	log.Info("Uploading file "+filename+" ...")
 
 	resp, err := n.HttpClient.Do(req)
 	if err != nil {

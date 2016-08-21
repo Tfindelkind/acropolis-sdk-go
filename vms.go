@@ -369,7 +369,7 @@ type VMList_json_REST struct {
 
 } */
 
-func VMExist(n *NTNXConnection, v *VM) (bool, error) {
+func VMExist(n *NTNXConnection, vmName string) (bool, error) {
 
 	resp, _ := NutanixAPIGet(n, NutanixAHVurl(n), "vms")
 
@@ -384,7 +384,7 @@ func VMExist(n *NTNXConnection, v *VM) (bool, error) {
 	var c int = 0
 
 	for i := 0; i < len(s); i++ {
-		if s[i].Config.Name == v.Name {
+		if s[i].Config.Name == vmName {
 			c++
 		}
 	}
@@ -392,8 +392,8 @@ func VMExist(n *NTNXConnection, v *VM) (bool, error) {
 	if c == 1 { 
 		return true, nil 
 	} else if c > 1 { 
-		log.Warn("VM name "+v.Name+" is not unique")
-		return true, fmt.Errorf("VM name "+v.Name+" is not unique") 
+		log.Warn("VM name "+vmName+" is not unique")
+		return true, fmt.Errorf("VM name "+vmName+" is not unique") 
 	} else { 
 		return false , nil
 	}
@@ -436,19 +436,19 @@ func GetVMIDbyName(n *NTNXConnection, Name string) (string, error) {
     } 
 }
 
-func GetVMbyName(n *NTNXConnection, v *VM) (VM_json_AHV, error) {
+func GetVMbyName(n *NTNXConnection, v *VM_json_AHV) (VM_json_AHV, error) {
 	
 	var vm_AHV VM_json_AHV
 	var err error
 	
-	v.VmId, err = GetVMIDbyName(n, v.Name)
+	v.UUID, err = GetVMIDbyName(n, v.Config.Name)
 	
 	if err != nil {
      log.Fatal(err)
      return vm_AHV, err
     }	
 	
-	resp, _ := NutanixAPIGet(n, NutanixAHVurl(n), "vms/"+v.VmId)
+	resp, _ := NutanixAPIGet(n, NutanixAHVurl(n), "vms/"+v.UUID)
 
 	json.Unmarshal(resp, &vm_AHV)
 	
@@ -461,9 +461,9 @@ func GetVMIDbyTask(n *NTNXConnection, t *Task_json_REST) string {
 		
 }
 
-func CreateVM(n *NTNXConnection, v *VM) (TaskUUID,error) {
+func CreateVM(n *NTNXConnection, v *VM_json_AHV) (TaskUUID,error) {
 
-	var jsonStr = []byte(`{"memoryMb": "` + v.MemoryMB + `", "name": "` + v.Name + `", "numVcpus": "` + v.Vcpus + `"}`)
+	var jsonStr = []byte(`{"memoryMb": "` + strconv.Itoa(v.Config.MemoryMb) + `", "name": "` + v.Config.Name + `", "numVcpus": "` + strconv.Itoa(v.Config.NumVcpus) + `"}`)
 	var task TaskUUID
 
 	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms", bytes.NewBuffer(jsonStr))
@@ -473,8 +473,8 @@ func CreateVM(n *NTNXConnection, v *VM) (TaskUUID,error) {
        return task, nil
     } 
   
-	log.Warn("VM "+v.Name+" could not created")
-	return task, fmt.Errorf("VM "+v.Name+" could not created")
+	log.Warn("VM "+v.Config.Name+" could not created")
+	return task, fmt.Errorf("VM "+v.Config.Name+" could not created")
 	
 }
 
@@ -526,9 +526,9 @@ func GetVMsbyContainer(n *NTNXConnection, container_name string) ([]string, erro
    return VMListing, nil
 }
 
-func GetVMState(n *NTNXConnection, vm *VM) string {
+func GetVMState(n *NTNXConnection, vm *VM_json_AHV) string {
 
-	resp, _ := NutanixAPIGet(n, NutanixAHVurl(n), "vms/"+vm.VmId)
+	resp, _ := NutanixAPIGet(n, NutanixAHVurl(n), "vms/"+vm.UUID)
 
 	var vm_AHV VM_json_AHV
 
@@ -538,9 +538,9 @@ func GetVMState(n *NTNXConnection, vm *VM) string {
 
 }
 
-func GetVMIP(n *NTNXConnection, vm *VM) (string, error) {
+func GetVMIP(n *NTNXConnection, vm *VM_json_AHV) (string, error) {
 
-	resp, _ := NutanixAPIGet(n, NutanixRestURL(n), "vms/"+vm.VmId)
+	resp, _ := NutanixAPIGet(n, NutanixRestURL(n), "vms/"+vm.UUID)
 
 	var vm_REST VM_json_REST
 
@@ -552,91 +552,91 @@ func GetVMIP(n *NTNXConnection, vm *VM) (string, error) {
 		return vm_REST.IPAddresses[0], nil
 	}
 
-	log.Warn("No IP found for VM "+vm.VmId)
-	return "", fmt.Errorf("No IP found for VM "+vm.VmId)
+	log.Warn("No IP found for VM "+vm.UUID)
+	return "", fmt.Errorf("No IP found for VM "+vm.UUID)
 }
 
-func CreateVDiskforVM(n *NTNXConnection, v *VM, d *VDisk) (TaskUUID,error) {
+func CreateVDiskforVM(n *NTNXConnection, v *VM_json_AHV, d *VDisk_json_REST) (TaskUUID,error) {
 
-	var jsonStr = []byte(`{ "disks": [  { "vmDiskCreate":  { "sizeMb": "` + d.MaxCapacityBytes + `", "containerId": "` + d.ContainerID + `"}} ] }`)
+	var jsonStr = []byte(`{ "disks": [  { "vmDiskCreate":  { "sizeMb": "` + strconv.Itoa(d.MaxCapacityBytes) + `", "containerId": "` + d.ContainerID + `"}} ] }`)
 	var task TaskUUID
 
-	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId+"/disks/", bytes.NewBuffer(jsonStr))
+	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/disks/", bytes.NewBuffer(jsonStr))
 	
 	if ( statusCode == 200 ) {
 	   json.Unmarshal(resp, &task)	
        return task, nil
     } 
   
-  log.Warn("vDisk "+d.Name+" could not created on container ID "+d.ContainerID+" for VM "+v.VmId)
-  return task, fmt.Errorf("vDisk "+d.Name+" could not created on container ID "+d.ContainerID+" for VM "+v.VmId)
+  log.Warn("vDisk "+d.Name+" could not created on container ID "+d.ContainerID+" for VM "+v.UUID)
+  return task, fmt.Errorf("vDisk "+d.Name+" could not created on container ID "+d.ContainerID+" for VM "+v.UUID)
 
 }
 
-func CreateVNicforVM(n *NTNXConnection, v *VM, net *Network) (TaskUUID,error) {
+func CreateVNicforVM(n *NTNXConnection, v *VM_json_AHV, net *Network_REST) (TaskUUID,error) {
 
 	var jsonStr = []byte(`{ "specList": [ {"networkUuid": "` + net.UUID + `"} ] }`)
 	var task TaskUUID
 
-	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId+"/nics/", bytes.NewBuffer(jsonStr))
+	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/nics/", bytes.NewBuffer(jsonStr))
 	
 	if ( statusCode == 200 ) {
 	   json.Unmarshal(resp, &task)	
        return task, nil
     } 
 
-  log.Warn("vNic could not created for VM "+v.VmId)
-  return task, fmt.Errorf("vNic could not created for VM "+v.VmId)
+  log.Warn("vNic could not created for VM "+v.UUID)
+  return task, fmt.Errorf("vNic could not created for VM "+v.UUID)
 
 }
 
-func StartVM(n *NTNXConnection, v *VM) (TaskUUID,error) {
+func StartVM(n *NTNXConnection, v *VM_json_AHV) (TaskUUID,error) {
 
 	var jsonStr = []byte(`{}`)
 	var task TaskUUID
 
-	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId+"/power_op/on", bytes.NewBuffer(jsonStr))
+	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/power_op/on", bytes.NewBuffer(jsonStr))
 	
 	if ( statusCode == 200 ) {
 	   json.Unmarshal(resp, &task)	
        return task, nil
     } 
 
-  log.Warn("VM "+v.VmId+" could not started")
-  return task, fmt.Errorf("VM "+v.VmId+" could not started")
+  log.Warn("VM "+v.UUID+" could not started")
+  return task, fmt.Errorf("VM "+v.UUID+" could not started")
 
 }
 
-func StopVM(n *NTNXConnection, v *VM)  (TaskUUID,error) {
+func StopVM(n *NTNXConnection, v *VM_json_AHV)  (TaskUUID,error) {
 
 	var jsonStr = []byte(`{}`)
 	var task TaskUUID
 
-	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId+"/power_op/off", bytes.NewBuffer(jsonStr))
+	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/power_op/off", bytes.NewBuffer(jsonStr))
 	
 	if ( statusCode == 200 ) {
 	   json.Unmarshal(resp, &task)	
        return task, nil
     } 
 
-  log.Warn("VM "+v.VmId+" could not stopped")
-  return task, fmt.Errorf("VM "+v.VmId+" could not stopped")
+  log.Warn("VM "+v.UUID+" could not stopped")
+  return task, fmt.Errorf("VM "+v.UUID+" could not stopped")
 
 }
 
-func DeleteVM(n *NTNXConnection, v *VM) (TaskUUID,error) {
+func DeleteVM(n *NTNXConnection, v *VM_json_AHV) (TaskUUID,error) {
 
 	var jsonStr = []byte(`{}`)
 	var task TaskUUID
 
-	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId, bytes.NewBuffer(jsonStr))
+	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID, bytes.NewBuffer(jsonStr))
 	
 	if ( statusCode == 200 ) {
 	   json.Unmarshal(resp, &task)	
        return task, nil
     } 
 
-  log.Warn("VM "+v.VmId+" could not stopped")
-  return task, fmt.Errorf("VM "+v.VmId+" could not stopped")
+  log.Warn("VM "+v.UUID+" could not stopped")
+  return task, fmt.Errorf("VM "+v.UUID+" could not stopped")
 
 }

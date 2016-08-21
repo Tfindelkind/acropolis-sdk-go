@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strconv"
 )
 
 type VDisk_json_REST struct {
@@ -159,9 +160,9 @@ func GetVDiskIDbyName(n *NTNXConnection, Name string) string {
 }
 
 
-func CreateVDisk(n *NTNXConnection, d *VDisk) (TaskUUID,error) {
+func CreateVDisk(n *NTNXConnection, d *VDisk_json_REST) (TaskUUID,error) {
 
-	var jsonStr = []byte(`{"containerId": "` + d.ContainerID + `", "name": "` + d.Name + `", "maxCapacityBytes": "` + d.MaxCapacityBytes + `"}`)
+	var jsonStr = []byte(`{"containerId": "` + d.ContainerID + `", "name": "` + d.Name + `", "maxCapacityBytes": "` + strconv.Itoa(d.MaxCapacityBytes) + `"}`)
 	var task TaskUUID
 
 	resp, statusCode := NutanixAPIPost(n, NutanixRestURL(n), "vdisks", bytes.NewBuffer(jsonStr))
@@ -176,12 +177,12 @@ func CreateVDisk(n *NTNXConnection, d *VDisk) (TaskUUID,error) {
 	
 }
 
-func CloneVDiskforVM(n *NTNXConnection, v *VM, VMDiskUUID string, ContainerID string) (TaskUUID,error) {
+func CloneVDiskforVM(n *NTNXConnection, v *VM_json_AHV, VMDiskUUID string, ContainerID string) (TaskUUID,error) {
 
 	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "containerUuid": "` + ContainerID + `" "vmDiskUuid": "` + VMDiskUUID + `" } , "isCdrom" : "false"} ] }`)
 	var task TaskUUID
 
-	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.VmId+"/disks/", bytes.NewBuffer(jsonStr))
+	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/disks/", bytes.NewBuffer(jsonStr))
 	
 	if ( statusCode == 200 ) {
 	   json.Unmarshal(resp, &task)	

@@ -8,6 +8,19 @@ import (
 	
 )
 
+type Network_REST struct {
+	LogicalTimestamp int `json:"logicalTimestamp"`
+	VlanID int `json:"vlanId"`
+	IPConfig struct {
+		PrefixLength int `json:"prefixLength"`
+		DhcpOptions struct {
+		} `json:"dhcpOptions"`
+		Pool []interface{} `json:"pool"`
+	} `json:"ipConfig"`
+	UUID string `json:"uuid"`
+	Name string `json:"name"`
+}
+
 type NetworkList_REST struct {
 	Entities []struct {
 		IPConfig struct {
