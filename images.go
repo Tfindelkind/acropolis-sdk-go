@@ -145,6 +145,25 @@ func ImageExistbyName(n *NTNXConnection, im *Image_json_AHV) bool {
 	return false
 }
 
+
+func DeleteImagebyName(n *NTNXConnection, ImageName string) (TaskUUID,error) {
+
+	var task TaskUUID
+
+	im, _ := GetImagebyName(n, ImageName)
+
+	resp, statusCode := NutanixAPIDelete(n,NutanixAHVurl(n), "images/"+im.UUID)
+
+	if ( statusCode == 200) {
+		json.Unmarshal(resp, &task)
+		return task, nil
+	 }	
+ 
+	log.Warn("Image "+ImageName+" not found")
+	return task, fmt.Errorf("Image "+ImageName+" not found")
+}	
+
+
 func CloneCDforVM(n *NTNXConnection, v *VM_json_AHV, im *Image_json_AHV) (TaskUUID,error) {
 
 	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "` + im.VMDiskID + `" } , "isCdrom" : "true"} ] }`)

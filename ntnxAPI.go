@@ -87,6 +87,59 @@ func NutanixAPIGet(n *NTNXConnection, NutanixAPIurl string, NutanixURI string) (
 
 }
 
+func NutanixAPIPost(n *NTNXConnection, NutanixAPIurl string, NutanixURI string, body *bytes.Buffer) ([]byte,int) {
+
+	var req *http.Request
+	var err error
+
+	req, err = http.NewRequest("POST", NutanixAPIurl+NutanixURI, body)
+	req.Header.Set("Authorization", "Basic "+n.SEnc)
+
+	DebugRequest(req)
+	
+	resp, err := n.HttpClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+		
+	bodyText, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	DebugResponse(resp,bodyText)
+
+	return bodyText, resp.StatusCode
+
+}
+
+func NutanixAPIDelete(n *NTNXConnection, NutanixAPIurl string, NutanixURI string) ([]byte,int) {
+
+	var req *http.Request
+	var err error
+
+	req, err = http.NewRequest("DELETE", NutanixAPIurl+NutanixURI, nil)
+	req.Header.Set("Authorization", "Basic "+n.SEnc)
+	
+	DebugRequest(req)
+
+	resp, err := n.HttpClient.Do(req)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	bodyText, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		log.Fatal(err)
+	}
+	
+	DebugResponse(resp,bodyText)
+
+	return bodyText, resp.StatusCode
+
+}
+
+
 func PutFileToImage(n *NTNXConnection, NutanixAPIurl string, NutanixURI string, filename string, containerName string) ([]byte,int) {
 
 	var req *http.Request
@@ -138,33 +191,6 @@ func PutFileToImage(n *NTNXConnection, NutanixAPIurl string, NutanixURI string, 
 	return bodyText, resp.StatusCode
 
 }
-
-func NutanixAPIPost(n *NTNXConnection, NutanixAPIurl string, NutanixURI string, body *bytes.Buffer) ([]byte,int) {
-
-	var req *http.Request
-	var err error
-
-	req, err = http.NewRequest("POST", NutanixAPIurl+NutanixURI, body)
-	req.Header.Set("Authorization", "Basic "+n.SEnc)
-
-	DebugRequest(req)
-	
-	resp, err := n.HttpClient.Do(req)
-	if err != nil {
-		log.Fatal(err)
-	}
-		
-	bodyText, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		log.Fatal(err)
-	}
-	
-	DebugResponse(resp,bodyText)
-
-	return bodyText, resp.StatusCode
-
-}
-
 
 func GetCluster(n *NTNXConnection) []byte {
 

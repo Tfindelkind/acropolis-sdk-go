@@ -590,6 +590,23 @@ func CreateVNicforVM(n *NTNXConnection, v *VM_json_AHV, net *Network_REST) (Task
 
 }
 
+func CreateVNicforVMwithMAC(n *NTNXConnection, v *VM_json_AHV, net *Network_REST, macAddress string) (TaskUUID,error) {
+
+	var jsonStr = []byte(`{ "specList": [ {"networkUuid":"` + net.UUID + `" , "macAddress":"` + macAddress+ `" } ] }`)
+	var task TaskUUID
+
+	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/nics/", bytes.NewBuffer(jsonStr))
+	
+	if ( statusCode == 200 ) {
+	   json.Unmarshal(resp, &task)	
+       return task, nil
+    } 
+
+  log.Warn("vNic could not created for VM "+v.UUID)
+  return task, fmt.Errorf("vNic could not created for VM "+v.UUID)
+
+}
+
 func StartVM(n *NTNXConnection, v *VM_json_AHV) (TaskUUID,error) {
 
 	var jsonStr = []byte(`{}`)
