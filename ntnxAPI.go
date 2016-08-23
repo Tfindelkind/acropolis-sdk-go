@@ -13,6 +13,8 @@ import (
 	"strconv"	
 )
 
+const AppVersion = "0.9 beta"
+
 type NTNXConnection struct {
 	NutanixHost string
 	Username    string

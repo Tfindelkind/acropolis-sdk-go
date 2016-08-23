@@ -163,7 +163,6 @@ func DeleteImagebyName(n *NTNXConnection, ImageName string) (TaskUUID,error) {
 	return task, fmt.Errorf("Image "+ImageName+" not found")
 }	
 
-
 func CloneCDforVM(n *NTNXConnection, v *VM_json_AHV, im *Image_json_AHV) (TaskUUID,error) {
 
 	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "` + im.VMDiskID + `" } , "isCdrom" : "true"} ] }`)
@@ -196,6 +195,61 @@ func CloneDiskforVM(n *NTNXConnection, v *VM_json_AHV, im *Image_json_AHV) (Task
 	 }	
  log.Warn("Image "+im.Name+" could not cloned for VM "+v.Config.Name)
  return task,fmt.Errorf("Image "+im.Name+" could not cloned for VM "+v.Config.Name)
+	 
+}
+
+func CloneCDforVMwithDetails(n *NTNXConnection, v *VM_json_AHV, im *Image_json_AHV, deviceBus string) (TaskUUID,error) {
+
+	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "` + im.VMDiskID + `" },"diskAddress":{"deviceBus":"`+deviceBus+`"}, "isCdrom" : "true" } ] }`)
+	var task TaskUUID	
+	
+	log.Debug("Post body: "+string(jsonStr))
+
+	resp , statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/disks/", bytes.NewBuffer(jsonStr))
+		
+	if ( statusCode == 200) {
+		json.Unmarshal(resp, &task)
+		return task, nil
+	 }	
+ log.Warn("Image "+im.Name+" could not cloned for VM "+v.Config.Name)
+ return task,fmt.Errorf("Image "+im.Name+" could not cloned for VM "+v.Config.Name)
+	 
+}
+
+func CloneDiskforVMwithDetails(n *NTNXConnection, v *VM_json_AHV, im *Image_json_AHV, deviceBus string) (TaskUUID,error) {
+
+	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "` + im.VMDiskID + `" },"diskAddress":{"deviceBus":"`+deviceBus+`"} } ] }`)
+	var task TaskUUID	
+	
+	log.Debug("Post body: "+string(jsonStr))
+
+	resp , statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/disks/", bytes.NewBuffer(jsonStr))
+		
+	if ( statusCode == 200) {
+		json.Unmarshal(resp, &task)
+		return task, nil
+	 }	
+ log.Warn("Image "+im.Name+" could not cloned for VM "+v.Config.Name)
+ return task,fmt.Errorf("Image "+im.Name+" could not cloned for VM "+v.Config.Name)
+	 
+}
+
+func CreateCDforVMwithDetails(n *NTNXConnection, v *VM_json_AHV, deviceBus string, deviceIndex string) (TaskUUID,error) {
+
+	//var jsonStr = []byte(`{ "disks": [ { "isEmpty":true,"isCdrom":true,"diskAddress":{"deviceBus":"`+deviceBus+`", "deviceIndex":"`+deviceIndex+`"} } ] }`)
+	var jsonStr = []byte(`{ "disks": [ { "isEmpty":true,"isCdrom":true,"diskAddress":{"deviceBus":"`+deviceBus+`"} } ] }`)
+	var task TaskUUID	
+	
+	log.Debug("Post body: "+string(jsonStr))
+
+	resp , statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/disks/", bytes.NewBuffer(jsonStr))
+		
+	if ( statusCode == 200) {
+		json.Unmarshal(resp, &task)
+		return task, nil
+	 }	
+ log.Warn("CD could not created for VM "+v.Config.Name)
+ return task,fmt.Errorf("CD could not created for VM "+v.Config.Name)
 	 
 }
 
@@ -251,6 +305,22 @@ func CreateImageFromURL(n *NTNXConnection, d *VDisk_json_REST, im *Image_json_AH
   
   log.Warn("Image "+im.Name+" could not created on container ID "+containerUUID+" from "+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUUID))
   return task,fmt.Errorf("Image "+im.Name+" could not created on container ID "+containerUUID+" from "+GenerateNFSURIfromVDisk(n.NutanixHost,SourceContainerName,d.VdiskUUID))
+}
+
+func CreateImageFromVdisk(n *NTNXConnection, d *VDisk_json_REST, im *Image_json_AHV) (TaskUUID,error) {			
+			
+	var jsonStr = []byte(`{ "name": "`+im.Name+`","annotation": "`+im.Annotation+`", "imageType":"DISK_IMAGE", "vmDiskClone":  { "vmDiskUuid": "` + d.VdiskUUID + `" } }`)
+	var task TaskUUID
+
+	resp , statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "images", bytes.NewBuffer(jsonStr))	
+	
+	if ( statusCode == 200) {
+		json.Unmarshal(resp, &task)
+		return task, nil
+	 }	
+  
+  log.Warn("Image "+im.Name+" could not created from vdisk ID "+d.VdiskUUID)
+  return task,fmt.Errorf("Image "+im.Name+" could not created from vdisk ID "+d.VdiskUUID)
 }
 
 func CreateImageObject(n *NTNXConnection, im *Image_json_AHV) (TaskUUID,error) {

@@ -340,6 +340,22 @@ type VMList_json_REST struct {
 	} `json:"entities"`
 }
 
+type VMDisks struct {
+			Addr struct {
+				DeviceBus string `json:"deviceBus"`
+				DeviceIndex int `json:"deviceIndex"`
+			} `json:"addr"`
+			IsCdrom bool `json:"isCdrom"`
+			IsEmpty bool `json:"isEmpty"`
+			SourceImage string `json:"sourceImage"`
+			IsSCSIPassthrough bool `json:"isSCSIPassthrough"`
+			ID string `json:"id"`
+			VMDiskUUID string `json:"vmDiskUuid,omitempty"`
+			SourceVMDiskUUID string `json:"sourceVmDiskUuid,omitempty"`
+			ContainerID int `json:"containerId,omitempty"`
+			ContainerUUID string `json:"containerUuid,omitempty"`
+}
+
 // This is an implementation of the same function based on interface with arbitrary data
 // see https://blog.golang.org/json-and-go
 // I avoid to use it because it may raise exceptions
@@ -607,6 +623,22 @@ func CreateVNicforVMwithMAC(n *NTNXConnection, v *VM_json_AHV, net *Network_REST
 
 }
 
+func DelteVNicforVM(n *NTNXConnection, v *VM_json_AHV, macAddress string) (TaskUUID,error) {
+	
+	var task TaskUUID
+
+	resp, statusCode := NutanixAPIDelete(n, NutanixAHVurl(n), "vms/"+v.UUID+"/nics/"+macAddress)
+	
+	if ( statusCode == 200 ) {
+	   json.Unmarshal(resp, &task)	
+       return task, nil
+    } 
+
+  log.Warn("vNic could not deleted for VM "+v.UUID)
+  return task, fmt.Errorf("vNic could not deleted for VM "+v.UUID)
+
+}
+
 func StartVM(n *NTNXConnection, v *VM_json_AHV) (TaskUUID,error) {
 
 	var jsonStr = []byte(`{}`)
@@ -643,17 +675,16 @@ func StopVM(n *NTNXConnection, v *VM_json_AHV)  (TaskUUID,error) {
 
 func DeleteVM(n *NTNXConnection, v *VM_json_AHV) (TaskUUID,error) {
 
-	var jsonStr = []byte(`{}`)
 	var task TaskUUID
 
-	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID, bytes.NewBuffer(jsonStr))
+	resp, statusCode := NutanixAPIDelete(n, NutanixAHVurl(n), "vms/"+v.UUID)
 	
 	if ( statusCode == 200 ) {
 	   json.Unmarshal(resp, &task)	
        return task, nil
     } 
 
-  log.Warn("VM "+v.UUID+" could not stopped")
-  return task, fmt.Errorf("VM "+v.UUID+" could not stopped")
+  log.Warn("VM "+v.UUID+" could not deleted")
+  return task, fmt.Errorf("VM "+v.UUID+" could not deleted")
 
 }

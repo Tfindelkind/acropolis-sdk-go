@@ -193,6 +193,18 @@ func WaitUntilTaskFinished(n *NTNXConnection, taskUUID string) (Task_json_REST,e
 	return task, fmt.Errorf("Task "+taskUUID+" not found or timedout")	
 }
 
+func WrappWaitUntilTaskFinished(n *NTNXConnection, taskUUID string, success_str string) {
+	
+	_ , err  := WaitUntilTaskFinished(n, taskUUID)
+	
+	if err != nil {
+		log.Fatal("Task does not exist")
+	} else {
+		log.Info(success_str)
+	}
+	
+}
+
 
 
 
