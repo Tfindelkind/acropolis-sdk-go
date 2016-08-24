@@ -141,6 +141,21 @@ func NutanixAPIDelete(n *NTNXConnection, NutanixAPIurl string, NutanixURI string
 
 }
 
+func NutanixCheckCredentials(n *NTNXConnection) {
+	
+	_ , statusCode := NutanixAPIGet(n, NutanixRestURL(n), "cluster")
+	
+	if ( statusCode == 401 ) {
+	  log.Fatal("Username or password not valid for host: "+n.NutanixHost)
+	  os.Exit(1)
+	 } 
+	
+	if ( statusCode != 200 ) {
+	  log.Fatal("Connection to host: "+n.NutanixHost+" not possible")
+	  os.Exit(1)
+	 } 
+}
+
 
 func PutFileToImage(n *NTNXConnection, NutanixAPIurl string, NutanixURI string, filename string, containerName string) ([]byte,int) {
 
