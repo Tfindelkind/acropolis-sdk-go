@@ -3,17 +3,17 @@ package ntnxAPI
 import (
 
 	//log "github.com/Sirupsen/logrus"
-	
+
 	"encoding/json"
-	
 )
 
-type Network_REST struct {
+// NetworkREST ...
+type NetworkREST struct {
 	LogicalTimestamp int `json:"logicalTimestamp"`
-	VlanID int `json:"vlanId"`
-	IPConfig struct {
+	VlanID           int `json:"vlanId"`
+	IPConfig         struct {
 		PrefixLength int `json:"prefixLength"`
-		DhcpOptions struct {
+		DhcpOptions  struct {
 		} `json:"dhcpOptions"`
 		Pool []interface{} `json:"pool"`
 	} `json:"ipConfig"`
@@ -21,7 +21,8 @@ type Network_REST struct {
 	Name string `json:"name"`
 }
 
-type NetworkList_REST struct {
+// NetworkListREST ...
+type NetworkListREST struct {
 	Entities []struct {
 		IPConfig struct {
 			DhcpOptions  struct{}      `json:"dhcpOptions"`
@@ -39,11 +40,12 @@ type NetworkList_REST struct {
 	} `json:"metadata"`
 }
 
+// GetNetworkIDbyName ...
 func GetNetworkIDbyName(n *NTNXConnection, Name string) string {
 
 	resp, _ := NutanixAPIGet(n, NutanixAHVurl(n), "networks/?filterCriteria=name%3D%3D"+Name)
 
-	var netl NetworkList_REST
+	var netl NetworkListREST
 
 	json.Unmarshal(resp, &netl)
 
