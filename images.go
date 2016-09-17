@@ -239,6 +239,27 @@ func CloneDiskforVMwithDetails(n *NTNXConnection, v *VMJSONAHV, im *ImageJSONAHV
 
 }
 
+// CloneDiskforVMwithMinimumSizeMb ...
+func CloneDiskforVMwithMinimumSizeMb(n *NTNXConnection, v *VMJSONAHV, im *ImageJSONAHV, minimumSizeMB string) (TaskUUID, error) {
+
+	var jsonStr = []byte(`{ "disks": [ { "vmDiskClone":  { "vmDiskUuid": "` + im.VMDiskID + `" , "minimumSizeMb": "` + minimumSizeMB + `" } } ] }`)
+	var task TaskUUID
+
+	log.Info(string(jsonStr))
+
+	log.Debug("Post body: " + string(jsonStr))
+
+	resp, statusCode := NutanixAPIPost(n, NutanixAHVurl(n), "vms/"+v.UUID+"/disks/", bytes.NewBuffer(jsonStr))
+
+	if statusCode == 200 {
+		json.Unmarshal(resp, &task)
+		return task, nil
+	}
+	log.Warn("Image " + im.Name + " could not cloned for VM " + v.Config.Name)
+	return task, fmt.Errorf("Image " + im.Name + " could not cloned for VM " + v.Config.Name)
+
+}
+
 // CreateCDforVMwithDetails ...
 func CreateCDforVMwithDetails(n *NTNXConnection, v *VMJSONAHV, deviceBus string, deviceIndex string) (TaskUUID, error) {
 
