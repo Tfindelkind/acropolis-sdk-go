@@ -330,6 +330,32 @@ func GetContainer(n *NTNXConnection) []byte {
 	resp, _ := NutanixAPIGet(n, NutanixRestURL(n), "containers")
 
 	return resp
+}
+
+// GetContainerNames ...
+func GetContainerNames(n *NTNXConnection) ([]string, error) {
+
+	var containterNameList []string
+
+	resp, statusCode := NutanixAPIGet(n, NutanixRestURL(n), "containers")
+
+	if statusCode == 200 {
+
+		var c ContainerListJSONREST
+
+		json.Unmarshal(resp, &c)
+
+		s := c.Entities
+
+		for _, elem := range s {
+			containterNameList = append(containterNameList, elem.Name)
+		}
+		return containterNameList, nil
+
+	}
+
+	log.Warn("Container Names could not be retrieved")
+	return containterNameList, fmt.Errorf("Container Names could not be retrieved")
 
 }
 
